@@ -182,6 +182,22 @@
             .section-title {
                 font-size: 2rem;
             }
+            #cart button {
+    margin-left: 5px;
+    padding: 4px 8px;
+    border: none;
+    background: #ff6b35;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#cart button:hover {
+    background: #e85a2a;
+}
+            #cart li {
+    margin-bottom: 10px;
+            }
         }
     </style>
 </head>
@@ -289,28 +305,58 @@
             });
         });
         let cart = [];
-let total = 0;
 
 function addToCart(product, price) {
-    cart.push({product, price});
-    total += price;
+    const existingItem = cart.find(item => item.product === product);
+
+    if (existingItem) {
+        existingItem.quantity += 1;
+    } else {
+        cart.push({ product, price, quantity: 1 });
+    }
 
     updateCart();
-}
+} 
 
-function updateCart() {
+    function updateCart() {
     const cartItems = document.getElementById('cart-items');
     const totalDisplay = document.getElementById('total');
 
     cartItems.innerHTML = "";
+    let total = 0;
 
-    cart.forEach(item => {
+    cart.forEach((item, index) => {
+        total += item.price * item.quantity;
+
         const li = document.createElement('li');
-        li.textContent = item.product + " - ₹" + item.price;
+        li.innerHTML = `
+            ${item.product} - ₹${item.price} x ${item.quantity}
+            <button onclick="increaseQty(${index})">+</button>
+            <button onclick="decreaseQty(${index})">-</button>
+            <button onclick="removeItem(${index})">❌</button>
+        `;
         cartItems.appendChild(li);
     });
 
     totalDisplay.textContent = total;
+}
+        function increaseQty(index) {
+    cart[index].quantity += 1;
+    updateCart();
+}
+
+function decreaseQty(index) {
+    if (cart[index].quantity > 1) {
+        cart[index].quantity -= 1;
+    } else {
+        cart.splice(index, 1);
+    }
+    updateCart();
+}
+
+function removeItem(index) {
+    cart.splice(index, 1);
+    updateCart();
 }
         // Add scroll effect to header
         window.addEventListener('scroll', () => {
