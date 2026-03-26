@@ -303,6 +303,7 @@
     <footer>
         <div class="container">
             <p>&copy; 2024 Shri, the Divine Flavor. All rights reserved. | Vimal Shukla</p>
+            <p>👀 Visitors: <span id="visits">Loading...</span></p>
         </div>
     </footer>
 
@@ -416,6 +417,11 @@ function removeItem(index) {
             } else {
                 header.style.background = 'rgba(255, 255, 255, 0.95)';
             }
+            fetch('https://api.countapi.xyz/hit/shrispices/visits')
+  .then(res => res.json())
+  .then(res => {
+    document.getElementById('visits').innerText = res.value;
+  });
         });
     </script>
 </body>
