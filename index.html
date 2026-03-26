@@ -208,7 +208,8 @@
     <ul id="cart-items"></ul>
     <button onclick="alert('Order placed! We will contact you.')">Checkout</button>
     <p><strong>Total: ₹<span id="total">0</span></strong></p>
-        </div> 
+           <button onclick="upiPay()">📲 Pay via UPI</button>
+        </div>
         <nav class="container">
             <a href="#" class="logo">🌶️ Shri, the Divine Flavor</a>
             <ul class="nav-links">
@@ -339,6 +340,21 @@ function addToCart(product, price) {
     });
 
     totalDisplay.textContent = total;
+}
+        function upiPay() {
+
+    let totalAmount = 0;
+
+    cart.forEach(item => {
+        totalAmount += item.price * item.quantity;
+    });
+
+    let upiID = "vishuclasse@okicici";
+    let name = "Shri Spices";
+
+    let url = `upi://pay?pa=${upiID}&pn=${name}&am=${totalAmount}&cu=INR`;
+
+    window.location.href = url;
 }
         function increaseQty(index) {
     cart[index].quantity += 1;
