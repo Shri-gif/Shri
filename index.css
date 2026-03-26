@@ -1,6 +1,0 @@
-.product-image {width:100%;height:250px;object-fit:cover;border-radius:15px;}
-.add-to-cart:hover {background:#218838;transform:scale(1.05);}
-.admin-toggle:hover {transform:scale(1.1);}
-.cart-modal {display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:3000;}
-.cart-modal.active {display:flex;align-items:center;justify-content:center;}
-.cart-content {background:white;max-width:600px;width:90%;max-height:80vh;overflow-y:auto;border-radius:20px;padding:2rem;}
