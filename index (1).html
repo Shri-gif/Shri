@@ -1,0 +1,24 @@
+<!-- Admin Panel -->
+<div class="admin-panel" id="adminPanel" style="position:fixed;top:160px;right:20px;background:rgba(255,255,255,0.95);padding:2rem;border-radius:15px;box-shadow:0 10px 30px rgba(0,0,0,0.3);z-index:2000;display:none;max-width:350px;">
+    <h3 style="margin-bottom:1.5rem;color:#ff6b35;">🛠️ Admin Panel</h3>
+    
+    <div style="margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid #eee;">
+        <h4 style="color:#ff6b35;margin-bottom:0.5rem;">🌶️ Product Images</h4>
+        <div style="margin-bottom:1rem;">
+            <label>Garam Masala:</label><br>
+            <input type="file" id="garamMasalaInput" accept="image/*" onchange="updateProductImage(event, 'garam-masala')" style="position:absolute;left:-9999px;">
+            <label for="garamMasalaInput" style="display:block;background:#ff6b35;color:white;padding:0.7rem;text-align:center;border-radius:8px;cursor:pointer;margin-top:0.5rem;">📁 Change Image</label>
+        </div>
+        <div style="margin-bottom:1rem;">
+            <label>Turmeric:</label><br>
+            <input type="file" id="turmericInput" accept="image/*" onchange="updateProductImage(event, 'turmeric')" style="position:absolute;left:-9999px;">
+            <label for="turmericInput" style="display:block;background:#ff6b35;color:white;padding:0.7rem;text-align:center;border-radius:8px;cursor:pointer;margin-top:0.5rem;">📁 Change Image</label>
+        </div>
+        <div>
+            <label>Chilli Powder:</label><br>
+            <input type="file" id="chilliInput" accept="image/*" onchange="updateProductImage(event, 'chilli')" style="position:absolute;left:-9999px;">
+            <label for="chilliInput" style="display:block;background:#ff6b35;color:white;padding:0.7rem;text-align:center;border-radius:8px;cursor:pointer;margin-top:0.5rem;">📁 Change Image</label>
+        </div>
+    </div>
+    <button onclick="toggleAdminPanel()" style="width:100%;background:#ff4757;color:white;border:none;padding:1rem;border-radius:10px;cursor:pointer;">Close Panel</button>
+</div>
