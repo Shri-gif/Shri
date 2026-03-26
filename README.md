@@ -1,2 +1,0 @@
-# Shri
-the devine flavor 
