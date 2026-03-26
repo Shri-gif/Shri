@@ -40,8 +40,7 @@
             font-size: 2rem;
             font-weight: bold;
             color: #ff6b35;
-            text-decoration: none;
-        }
+            
         .nav-links {
             display: flex;
             list-style: none;
@@ -57,7 +56,8 @@
             color: #ff6b35;
         }
         .hero {
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600"><rect fill="%23ff9a56" width="1200" height="600"/><circle fill="%23ff6b35" opacity="0.3" cx="200" cy="200" r="150"/><circle fill="%23ffd23f" opacity="0.4" cx="800" cy="250" r="120"/><circle fill="%23ff4757" opacity="0.2" cx="1000" cy="400" r="100"/></svg>') center/cover;
+            background: url('https://images.unsplash.com/photo-1596040033229-a9821ebd058d') center/cover no-repeat;
+}
             height: 100vh;
             display: flex;
             align-items: center;
@@ -187,6 +187,11 @@
 </head>
 <body>
     <header>
+        <div id="cart" style="position:fixed; top:90px; right:20px; background:white; padding:15px; border-radius:10px; box-shadow:0 5px 15px rgba(0,0,0,0.2);">
+    <h3>🛒 Cart</h3>
+    <ul id="cart-items"></ul>
+    <p><strong>Total: ₹<span id="total">0</span></strong></p>
+        </div> 
         <nav class="container">
             <a href="#" class="logo">🌶️ Shri, the Divine Flavor</a>
             <ul class="nav-links">
@@ -211,18 +216,21 @@
             <h2 class="section-title">Our Premium Spices</h2>
             <div class="product-grid">
                 <div class="product-card">
-                    <img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 250'><rect fill='%23ff6b35' width='300' height='250' rx='15'/><text x='150' y='125' font-family='Arial' font-size='24' fill='white' text-anchor='middle' dy='.3em'>Garam Masala</text><text x='150' y='160' font-family='Arial' font-size='16' fill='white' text-anchor='middle' opacity='.8'>Aromatic Spice Blend</text></svg>" alt="Garam Masala">
+                    <img src="https://images.unsplash.com/photo-1601050690597-df0568f70950" alt="Garam Masala">
                     <h3>🌿 Garam Masala</h3>
+                    <button onclick="addToCart('Garam Masala', 199)">Add to Cart</button>
                     <p>The perfect blend of aromatic spices that brings authentic Indian flavor to every dish. Pure and freshly ground.</p>
                 </div>
                 <div class="product-card">
-                    <img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 250'><rect fill='%23ffd23f' width='300' height='250' rx='15'/><circle cx='150' cy='125' r='60' fill='%23ff9a56'/><text x='150' y='125' font-family='Arial' font-size='24' fill='white' text-anchor='middle' dy='.3em'>Turmeric</text><text x='150' y='160' font-family='Arial' font-size='16' fill='white' text-anchor='middle' opacity='.8'>Powder</text></svg>" alt="Turmeric Powder">
+                    <img src="https://images.unsplash.com/photo-1615486363613-c6c8f8e8c6f2" alt="Turmeric Powder">
                     <h3>🌟 Turmeric Powder</h3>
+                    <button onclick="addToCart('Turmeric Powder', 149)">Add to Cart</button>
                     <p>Nature's golden healer. Rich in curcumin, vibrant color, and pure flavor for health and cooking.</p>
                 </div>
                 <div class="product-card">
-                    <img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 250'><rect fill='%23ff4757' width='300' height='250' rx='15'/><path d='M100 80 Q150 50 200 80 Q250 110 200 180 Q150 210 100 180 Z' fill='%23ff6b6b'/><text x='150' y='125' font-family='Arial' font-size='24' fill='white' text-anchor='middle' dy='.3em'>Chilli Powder</text><text x='150' y='160' font-family='Arial' font-size='16' fill='white' text-anchor='middle' opacity='.8'>Fiery Heat</text></svg>" alt="Chilli Powder">
+                    <img src="https://images.unsplash.com/photo-1604908176997-4319c0b7c9f7" alt="Chilli Powder">
                     <h3>🔥 Chilli Powder</h3>
+                    <button onclick="addToCart('Chilli Powder', 179)">Add to Cart</button>
                     <p>Perfectly balanced heat with rich flavor. Ideal for curries, marinades, and all your spicy favorites.</p>
                 </div>
             </div>
@@ -279,7 +287,31 @@
                 }
             });
         });
+        let cart = [];
+let total = 0;
 
+function addToCart(product, price) {
+    cart.push({product, price});
+    total += price;
+
+    updateCart();
+}
+
+function updateCart() {
+    const cartItems = document.getElementById('cart-items');
+    const totalDisplay = document.getElementById('total');
+
+    cartItems.innerHTML = "";
+
+    cart.forEach(item => {
+        const li = document.createElement('li');
+        li.textContent = item.product + " - ₹" + item.price;
+        cartItems.appendChild(li);
+    });
+
+    totalDisplay.textContent = total;
+}
+<button onclick="alert('Order placed! We will contact you.')">Checkout</button>
         // Add scroll effect to header
         window.addEventListener('scroll', () => {
             const header = document.querySelector('header');
