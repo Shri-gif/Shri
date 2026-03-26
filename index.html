@@ -40,6 +40,7 @@
             font-size: 2rem;
             font-weight: bold;
             color: #ff6b35;
+        } 
             
         .nav-links {
             display: flex;
@@ -57,7 +58,6 @@
         }
         .hero {
             background: url('https://images.unsplash.com/photo-1596040033229-a9821ebd058d') center/cover no-repeat;
-}
             height: 100vh;
             display: flex;
             align-items: center;
@@ -190,6 +190,7 @@
         <div id="cart" style="position:fixed; top:90px; right:20px; background:white; padding:15px; border-radius:10px; box-shadow:0 5px 15px rgba(0,0,0,0.2);">
     <h3>🛒 Cart</h3>
     <ul id="cart-items"></ul>
+    <button onclick="alert('Order placed! We will contact you.')">Checkout</button>
     <p><strong>Total: ₹<span id="total">0</span></strong></p>
         </div> 
         <nav class="container">
@@ -311,7 +312,6 @@ function updateCart() {
 
     totalDisplay.textContent = total;
 }
-<button onclick="alert('Order placed! We will contact you.')">Checkout</button>
         // Add scroll effect to header
         window.addEventListener('scroll', () => {
             const header = document.querySelector('header');
