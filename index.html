@@ -37,10 +37,22 @@
             align-items: center;
         }
         .logo {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #ff6b35;
-        } 
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.logo img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+
+.logo span {
+    font-size: 20px;
+    font-weight: bold;
+    color: #ff6b35;
+} 
             
         .nav-links {
             display: flex;
@@ -215,7 +227,10 @@
            <button onclick="sendWhatsApp()">📩 Order on WhatsApp</button>
         </div>
         <nav class="container">
-            <a href="#" class="logo">🌶️ Shri, the Divine Flavor</a>
+            <div class="logo">
+    <img src="logo.png" alt="Shri Spices Logo">
+    <span>Shri Spices</span>
+      </div> 
             <ul class="nav-links">
                 <li><a href="#home">Home</a></li>
                 <li><a href="#products">Products</a></li>
