@@ -54,7 +54,7 @@
 
     const { data: admin, error: adminError } = await supabase
       .from("admin_users")
-      .select("id, role")
+      .select("user_id, role")
       .eq("user_id", session.user.id)
       .maybeSingle();
 
