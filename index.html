@@ -261,7 +261,7 @@
     color:#2d6a4f;
 }
     </style>
-</head>
+<link rel="stylesheet" href="assets/css/style.css"></head>
 <body>
     <header>
         <nav class="container"> 
@@ -290,44 +290,14 @@
     <section id="products" class="section products">
         <div class="container">
             <h2 class="section-title">Our Premium Spices</h2>
-            <div class="product-grid">
-                <div class="product-card">
-                    <img src="https://i.supaimg.com/91425b33-c00e-4e4b-9924-cef6cb565405/7dc51e20-dfae-4ff5-8cbb-ac050002dd04.jpg" alt="Garam Masala">
-                    <h3>🌿 Garam Masala</h3>
-                    <button onclick="addToCart('Garam Masala 100g', 99)">100g - ₹99</button>
-                    <button onclick="addToCart('Garam Masala 250g', 199)">250g - ₹199</button>
-                    <button onclick="addToCart('Garam Masala 500g', 349)">500g - ₹349</button> 
-                    <p>The perfect blend of aromatic spices that brings authentic Indian flavor to every dish. Pure and freshly ground.</p>
-                </div>
-                <div class="product-card">
-                    <img src="https://i.supaimg.com/91425b33-c00e-4e4b-9924-cef6cb565405/589c1912-801c-4d57-8c3b-b7b61a7b5a3a.jpg" alt="Turmeric Powder">
-                    <h3>🌟 Turmeric Powder</h3>
-                    <button onclick="addToCart('Turmeric 100g', 59)">100g - ₹59</button>
-                    <button onclick="addToCart('Turmeric 250g', 129)">250g - ₹129</button> 
-                    <p>Nature's golden healer. Rich in curcumin, vibrant color, and pure flavor for health and cooking.</p>
-                </div>
-                <div class="product-card">
-                    <img src="https://i.supaimg.com/91425b33-c00e-4e4b-9924-cef6cb565405/db31286b-0873-4dfa-9888-330d7da57e17.jpg" alt="Chilli Powder">
-                    <h3>🌶️ Chilli Powder</h3>
-                    <button onclick="addToCart('Chilli 100g', 89)">100g - ₹89</button>
-                    <button onclick="addToCart('Chilli 250g', 179)">250g - ₹179</button>
-                    <p>Perfectly balanced heat with rich flavor. Ideal for curries, marinades, and all your spicy favorites.</p>
-                </div>
-                <div class="product-card">
-                    <img src="https://i.supaimg.com/91425b33-c00e-4e4b-9924-cef6cb565405/9cd35a35-8252-454e-a9b9-87ecc0c89406.jpg" alt="Combo Pack">
-                    <h3>🔥 Combo Pack (Best Deal)</h3>
-                    <p>Garam Masala + Turmeric + Chilli (100g each)</p>
-                    <p><del>₹247</del> <strong>₹199</strong></p>
-                    <button onclick="addToCart('Combo Pack (3 Items)', 199)"> Add Combo to Cart </button>
-                </div>
-            </div>
+            <div class="product-grid" id="dynamic-product-grid"><p>Loading products…</p></div>
         </div>
     </section>
     
     <div id="cart">
   <h3>🛒 Cart</h3>
   <ul id="cart-items"></ul>
-  <button onclick="alert('Order placed! We will contact you.')">Checkout</button>
+  <button onclick="sendWhatsApp()">Checkout / Order on WhatsApp</button>
   <p><strong>Total: ₹<span id="total">0</span></strong></p>
         <p style="font-size:12px; color:green;">
     🔥 Best Seller: 250g Pack (Most Popular)
@@ -382,7 +352,8 @@ Because every meal deserves the flavor of trust.</p>
         </div>
     </section>
 
-    <section id="contact" class="section contact">
+    <section id="wholesale" class="section about"><div class="container"><h2 class="section-title">Wholesale / B2B Inquiry</h2><div class="about-content"><form id="b2b-form" style="display:grid;gap:12px;max-width:650px;margin:auto"><input name="name" placeholder="Your name" required><input name="business" placeholder="Business / Restaurant name"><input name="phone" placeholder="Phone number" required><input name="email" type="email" placeholder="Email (optional)"><textarea name="requirements" rows="4" placeholder="Products, quantity, delivery location" required></textarea><button class="cta-button" type="submit">Send Wholesale Inquiry</button><p id="b2b-status"></p></form></div></div></section>
+<section id="contact" class="section contact">
         <div class="container">
             <h2 class="section-title">Get in Touch</h2>
             <div class="contact-info">
@@ -409,122 +380,11 @@ Because every meal deserves the flavor of trust.</p>
         </div>
     </footer>
 
-    <script>
-        // Smooth scrolling for navigation links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
-            });
-        });
-        let cart = [];
-
-function addToCart(product, price) {
-    const existingItem = cart.find(item => item.product === product);
-
-    if (existingItem) {
-        existingItem.quantity += 1;
-    } else {
-        cart.push({ product, price, quantity: 1 });
-    }
-
-    updateCart();
-} 
-
-    function updateCart() {
-    const cartItems = document.getElementById('cart-items');
-    const totalDisplay = document.getElementById('total');
-
-    cartItems.innerHTML = "";
-    let total = 0;
-
-    cart.forEach((item, index) => {
-        total += item.price * item.quantity;
-
-        const li = document.createElement('li');
-        li.innerHTML = `
-            ${item.product} - ₹${item.price} x ${item.quantity}
-            <button onclick="increaseQty(${index})">+</button>
-            <button onclick="decreaseQty(${index})">-</button>
-            <button onclick="removeItem(${index})">❌</button>
-        `;
-        cartItems.appendChild(li);
-    });
-
-    totalDisplay.textContent = total;
-}
-        function upiPay() {
-
-    let totalAmount = 0;
-
-    cart.forEach(item => {
-        totalAmount += item.price * item.quantity;
-    });
-
-    let upiID = "vishuclasse@okicici";
-    let name = "Shri Spices";
-
-    let url = `upi://pay?pa=${upiID}&pn=${name}&am=${totalAmount}&cu=INR`;
-
-    window.location.href = url;
-}
-        function sendWhatsApp() {
-
-    let message = "🛒 Order Details:\n";
-
-    cart.forEach(item => {
-        message += `${item.product} x ${item.quantity} = ₹${item.price * item.quantity}\n`;
-    });
-
-    let total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-
-    message += `\nTotal: ₹${total}\n`;
-    message += "Payment done via UPI.";
-
-    let phone = "917379969545";
-
-    let url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-
-    window.open(url, "_blank");
-        }
-        function increaseQty(index) {
-    cart[index].quantity += 1;
-    updateCart();
-}
-
-function decreaseQty(index) {
-    if (cart[index].quantity > 1) {
-        cart[index].quantity -= 1;
-    } else {
-        cart.splice(index, 1);
-    }
-    updateCart();
-}
-
-function removeItem(index) {
-    cart.splice(index, 1);
-    updateCart();
-}
-        // Add scroll effect to header
-        window.addEventListener('scroll', () => {
-            const header = document.querySelector('header');
-            if (window.scrollY > 100) {
-                header.style.background = 'rgba(255, 255, 255, 0.98)';
-            } else {
-                header.style.background = 'rgba(255, 255, 255, 0.95)';
-            }
-            fetch('https://api.countapi.xyz/hit/shrispices/visits')
-  .then(res => res.json())
-  .then(res => {
-    document.getElementById('visits').innerText = res.value;
-  });
-        });
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/supabase.js"></script><script src="js/products.js"></script>
+<script src="js/cart.js"></script><script src="js/checkout.js"></script><script src="js/b2b.js"></script>
+<script>
+ document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();document.querySelector(a.getAttribute('href'))?.scrollIntoView({behavior:'smooth'});}));
+ window.addEventListener('scroll',()=>{const h=document.querySelector('header');h.style.background=window.scrollY>100?'rgba(255,255,255,.98)':'rgba(255,255,255,.95)';});
+</script>
 </body>
 </html>
