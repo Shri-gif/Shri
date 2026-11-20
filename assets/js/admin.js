@@ -5,6 +5,7 @@
   let products = [];
   let currentVariants = [];
   let deletedVariantIds = [];
+  let activeProductId = null;
 
   const $ = function (id) {
     return document.getElementById(id);
@@ -30,10 +31,6 @@
     });
   }
 
-  function money(value) {
-    return Number(value || 0).toFixed(2);
-  }
-
   function getVariantName(variant) {
     return variant.variant_name ||
       variant.weight ||
@@ -55,6 +52,57 @@
       variant.stock_quantity ??
       variant.quantity_available ??
       0;
+  }
+
+  // Create the product-specific heading without requiring HTML changes.
+  function ensureVariantHeading() {
+    const table = $("adminVariantsTableBody");
+    if (!table) return;
+
+    const section = table.closest("table")?.parentElement || table.parentElement;
+    if (!section) return;
+
+    let heading = $("variantParentProductName");
+
+    if (!heading) {
+      heading = document.createElement("div");
+      heading.id = "variantParentProductName";
+
+      heading.style.cssText = [
+        "margin:12px 0",
+        "padding:12px 14px",
+        "border:1px solid #ddd",
+        "border-radius:8px",
+        "background:#f7f7f7",
+        "font-weight:600"
+      ].join(";");
+
+      section.insertBefore(heading, section.firstChild);
+    }
+
+    updateVariantHeading();
+  }
+
+  function updateVariantHeading() {
+    const heading = $("variantParentProductName");
+    if (!heading) return;
+
+    const productId = $("adminProductId")?.value;
+    const productName = $("adminProductName")?.value.trim();
+
+    if (productId) {
+      heading.textContent =
+        "Pack Sizes & Pricing for: " +
+        (productName || "Selected Product") +
+        " (Product ID: " + productId + ")";
+    } else if (productName) {
+      heading.textContent =
+        "Pack Sizes for: " + productName +
+        " — Save the product to create its product ID.";
+    } else {
+      heading.textContent =
+        "Pack Sizes & Pricing — Enter a product name first.";
+    }
   }
 
   async function initializeSupabase() {
@@ -163,6 +211,7 @@
 
       showLogin();
       $("adminLoginForm").reset();
+      resetProductForm();
 
     } catch (error) {
       console.error("Admin logout error:", error);
@@ -263,8 +312,9 @@
 
   function renderVariantRow(variant) {
     const tbody = $("adminVariantsTableBody");
-    const noRow = $("adminNoVariantsRow");
+    if (!tbody) return;
 
+    const noRow = $("adminNoVariantsRow");
     if (noRow) noRow.remove();
 
     const row = document.createElement("tr");
@@ -347,6 +397,17 @@
   }
 
   function addVariant() {
+    const productName = $("adminProductName").value.trim();
+
+    if (!productName) {
+      showMessage(
+        "adminVariantMessage",
+        "Enter the product name before adding pack sizes.",
+        true
+      );
+      return;
+    }
+
     renderVariantRow({
       variant_name: "",
       mrp: "",
@@ -354,6 +415,8 @@
       stock: 0,
       is_active: true
     });
+
+    showMessage("adminVariantMessage", "", false);
   }
 
   function updateVariantDiscount(row) {
@@ -377,7 +440,7 @@
     $("adminVariantsTableBody").innerHTML = `
       <tr id="adminNoVariantsRow">
         <td colspan="6">
-          No pack sizes added yet. Click Add Pack Size.
+          No pack sizes added yet.
         </td>
       </tr>
     `;
@@ -388,6 +451,8 @@
 
   async function loadVariants(productId) {
     clearVariants();
+
+    activeProductId = String(productId);
 
     const { data, error } = await supabase
       .from("product_variants")
@@ -406,7 +471,10 @@
       return;
     }
 
-    currentVariants = data || [];
+    // Only variants belonging to the selected product are displayed.
+    currentVariants = (data || []).filter(function (variant) {
+      return String(variant.product_id) === String(productId);
+    });
 
     if (currentVariants.length === 0) return;
 
@@ -415,6 +483,12 @@
     currentVariants.forEach(function (variant) {
       renderVariantRow(variant);
     });
+
+    showMessage(
+      "adminVariantMessage",
+      currentVariants.length + " pack size(s) loaded for this product.",
+      false
+    );
   }
 
   function collectVariants() {
@@ -463,7 +537,6 @@
     return variants;
   }
 
-  // Remove only a variant explicitly removed from the form.
   function removeVariant(row) {
     const variantId = row.dataset.variantId;
 
@@ -477,7 +550,7 @@
       $("adminVariantsTableBody").innerHTML = `
         <tr id="adminNoVariantsRow">
           <td colspan="6">
-            No pack sizes added yet. Click Add Pack Size.
+            No pack sizes added yet.
           </td>
         </tr>
       `;
@@ -485,74 +558,15 @@
   }
 
   // -----------------------------
-  // SUPABASE VARIANT SAVE
+  // SAVE VARIANTS
   // -----------------------------
 
-  function isMissingColumnError(error) {
-    return error &&
-      (
-        error.code === "42703" ||
-        /column .* does not exist/i.test(error.message || "")
-      );
-  }
-
-  function getMissingColumn(error, payload) {
-    const message = error.message || "";
-
-    const match = message.match(/column ["']?([^"' ]+)["']? does not exist/i);
-
-    if (match && payload[match[1]] !== undefined) {
-      return match[1];
-    }
-
-    const simpleMatch = message.match(/Could not find the ['"]([^'"]+)['"] column/i);
-
-    if (simpleMatch && payload[simpleMatch[1]] !== undefined) {
-      return simpleMatch[1];
-    }
-
-    return null;
-  }
-
-  async function saveVariantWithSchemaFallback(payload, variantId) {
-    let data = { ...payload };
-
-    // If the actual database does not contain an optional field,
-    // retry without that field rather than changing the database.
-    for (let attempt = 0; attempt < 8; attempt++) {
-      let result;
-
-      if (variantId) {
-        result = await supabase
-          .from("product_variants")
-          .update(data)
-          .eq("id", variantId);
-      } else {
-        result = await supabase
-          .from("product_variants")
-          .insert([data]);
-      }
-
-      if (!result.error) return;
-
-      if (!isMissingColumnError(result.error)) {
-        throw result.error;
-      }
-
-      const missingColumn = getMissingColumn(result.error, data);
-
-      if (!missingColumn) {
-        throw result.error;
-      }
-
-      delete data[missingColumn];
-    }
-
-    throw new Error("Could not match the product variant database columns.");
-  }
-
   async function saveVariants(productId, variants) {
-    // Delete variants explicitly removed by the administrator.
+    if (!productId) {
+      throw new Error("Product ID is missing. Variants cannot be linked.");
+    }
+
+    // Delete only variants explicitly removed from this product.
     for (const variantId of deletedVariantIds) {
       const { error } = await supabase
         .from("product_variants")
@@ -567,21 +581,32 @@
       const payload = {
         product_id: productId,
         variant_name: variant.variant_name,
-        weight: variant.variant_name,
-        size: variant.variant_name,
         mrp: variant.mrp,
-        original_price: variant.mrp,
         selling_price: variant.selling_price,
-        sale_price: variant.selling_price,
-        price: variant.selling_price,
         stock: variant.stock,
-        stock_quantity: variant.stock,
-        is_active: variant.is_active,
-        active: variant.is_active
+        is_active: variant.is_active
       };
 
-      await saveVariantWithSchemaFallback(payload, variant.id);
+      if (variant.id) {
+        // Prevent updating a variant belonging to another product.
+        const { error } = await supabase
+          .from("product_variants")
+          .update(payload)
+          .eq("id", variant.id)
+          .eq("product_id", productId);
+
+        if (error) throw error;
+
+      } else {
+        const { error } = await supabase
+          .from("product_variants")
+          .insert([payload]);
+
+        if (error) throw error;
+      }
     }
+
+    deletedVariantIds = [];
   }
 
   // -----------------------------
@@ -594,12 +619,15 @@
     $("adminProductId").value = "";
     $("adminProductActive").checked = true;
 
+    activeProductId = null;
+
     $("saveProductButton").textContent = "Save Product";
 
     showMessage("adminProductMessage", "", false);
     showMessage("adminVariantMessage", "", false);
 
     clearVariants();
+    updateVariantHeading();
   }
 
   async function editProduct(productId) {
@@ -608,6 +636,9 @@
     });
 
     if (!product) return;
+
+    // Clear old product's variants before switching.
+    clearVariants();
 
     $("adminProductId").value = product.id;
     $("adminProductName").value = product.name || "";
@@ -618,6 +649,11 @@
     $("adminProductActive").checked = Boolean(product.is_active);
 
     $("saveProductButton").textContent = "Update Product";
+
+    activeProductId = String(product.id);
+    updateVariantHeading();
+
+    showMessage("adminVariantMessage", "Loading this product's pack sizes...", false);
 
     await loadVariants(product.id);
 
@@ -665,6 +701,7 @@
     }
 
     const button = $("saveProductButton");
+    const originalButtonText = productId ? "Update Product" : "Save Product";
 
     button.disabled = true;
     button.textContent = "Saving...";
@@ -692,13 +729,18 @@
         savedProductId = data.id;
       }
 
+      if (!savedProductId) {
+        throw new Error("Product was saved but its ID could not be obtained.");
+      }
+
+      // All new and existing variants are linked to this exact product ID.
       await saveVariants(savedProductId, variants);
 
       showMessage(
         "adminProductMessage",
         productId
-          ? "Product and pack sizes updated successfully."
-          : "Product and pack sizes added successfully.",
+          ? "Product and its pack sizes updated successfully."
+          : "Product and its pack sizes added successfully.",
         false
       );
 
@@ -718,7 +760,7 @@
 
     } finally {
       button.disabled = false;
-      button.textContent = productId ? "Update Product" : "Save Product";
+      button.textContent = originalButtonText;
     }
   }
 
@@ -818,15 +860,16 @@
       editProduct(button.dataset.id);
     });
 
-    // Automatically generate a slug from the product name.
     $("adminProductName").addEventListener("input", function () {
-      if ($("adminProductId").value) return;
+      if (!$("adminProductId").value) {
+        $("adminProductSlug").value = this.value
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "");
+      }
 
-      $("adminProductSlug").value = this.value
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "");
+      updateVariantHeading();
     });
   }
 
@@ -837,6 +880,7 @@
   document.addEventListener("DOMContentLoaded", async function () {
     try {
       bindEvents();
+      ensureVariantHeading();
 
       await initializeSupabase();
       await checkAdminSession();
