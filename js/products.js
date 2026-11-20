@@ -1,4 +1,3 @@
-
 /* =========================================
    SHRI SPICES - PRODUCT MANAGEMENT
    File: js/products.js
@@ -77,7 +76,7 @@
     function getVariantName(variant) {
         return getValue(
             variant,
-            ["weight", "variant_name", "name", "size", "quantity"],
+            ["variant_name", "weight", "size", "name", "quantity"],
             "Standard"
         );
     }
@@ -86,8 +85,18 @@
         return Number(
             getValue(
                 variant,
-                ["price", "selling_price", "sale_price"],
+                ["selling_price", "sale_price", "price"],
                 0
+            )
+        );
+    }
+
+    function getVariantMRP(variant) {
+        return Number(
+            getValue(
+                variant,
+                ["mrp", "original_price", "regular_price"],
+                getVariantPrice(variant)
             )
         );
     }
@@ -100,6 +109,19 @@
                 0
             )
         );
+    }
+
+    function getDiscount(variant) {
+        const mrp = getVariantMRP(variant);
+        const price = getVariantPrice(variant);
+
+        if (mrp <= 0 || price >= mrp) return 0;
+
+        return Math.round(((mrp - price) / mrp) * 100);
+    }
+
+    function formatPrice(value) {
+        return Number(value || 0).toFixed(2);
     }
 
     function showMessage(message, isError = false) {
@@ -127,23 +149,20 @@
 
         if (!productGrid) return;
 
-        if (
-            !window.shriSupabaseReady ||
-            !window.shriSupabase
-        ) {
-            productGrid.innerHTML =
-                '<p class="empty-message">Unable to connect to the product service.</p>';
-
-            showMessage("Supabase connection is unavailable.", true);
-            return;
-        }
-
         productGrid.innerHTML =
             '<p class="loading-message">Loading products...</p>';
 
         clearMessage();
 
         try {
+            if (window.shriSupabaseReady) {
+                await window.shriSupabaseReady;
+            }
+
+            if (!window.shriSupabase) {
+                throw new Error("Supabase connection is unavailable.");
+            }
+
             const client = window.shriSupabase;
 
             const productResult = await client
@@ -154,9 +173,7 @@
                 throw productResult.error;
             }
 
-            let fetchedProducts = productResult.data || [];
-
-            fetchedProducts = fetchedProducts.filter(isActive);
+            let fetchedProducts = (productResult.data || []).filter(isActive);
 
             if (fetchedProducts.length === 0) {
                 products = [];
@@ -183,24 +200,28 @@
 
             const allVariants = variantResult.data || [];
 
-            // Attach variants to their products
+            // Attach active variants to products
             products = fetchedProducts.map(product => {
-
-                const variants = allVariants.filter(variant =>
-                    String(variant.product_id) === String(product.id)
-                ).filter(isActive);
+                const variants = allVariants
+                    .filter(variant =>
+                        String(variant.product_id) === String(product.id)
+                    )
+                    .filter(isActive);
 
                 return {
                     ...product,
                     variants: variants
                 };
-
             });
+
+            // Hide products without active variants
+            products = products.filter(product =>
+                product.variants.length > 0
+            );
 
             renderProducts();
 
         } catch (error) {
-
             console.error(
                 "Shri Spices: Product loading failed:",
                 error
@@ -213,8 +234,36 @@
                 error.message || "Please check your database configuration.",
                 true
             );
-
         }
+    }
+
+    // Render price details
+    function renderPrice(productIndex, variant) {
+        const priceElement = document.getElementById(
+            `product-price-${productIndex}`
+        );
+
+        if (!priceElement) return;
+
+        const price = getVariantPrice(variant);
+        const mrp = getVariantMRP(variant);
+        const discount = getDiscount(variant);
+
+        priceElement.innerHTML = `
+            <strong>₹${formatPrice(price)}</strong>
+
+            ${
+                mrp > price
+                    ? `<del>₹${formatPrice(mrp)}</del>`
+                    : ""
+            }
+
+            ${
+                discount > 0
+                    ? `<span class="product-discount">${discount}% OFF</span>`
+                    : ""
+            }
+        `;
     }
 
     // Render product cards
@@ -230,7 +279,6 @@
         }
 
         productGrid.innerHTML = products.map((product, index) => {
-
             const variants = getVariants(product);
 
             const description = getValue(
@@ -241,33 +289,33 @@
 
             const image = getProductImage(product);
 
-            const variantOptions = variants.map((variant, variantIndex) => {
+            const availableVariants = variants.filter(variant =>
+                getVariantStock(variant) > 0
+            );
 
+            const firstVariant = availableVariants[0] || variants[0];
+
+            const variantOptions = variants.map((variant, variantIndex) => {
                 const price = getVariantPrice(variant);
                 const stock = getVariantStock(variant);
+                const mrp = getVariantMRP(variant);
                 const label = getVariantName(variant);
 
                 return `
                     <option
                         value="${variantIndex}"
-                        ${variantIndex === 0 ? "selected" : ""}
+                        ${variant === firstVariant ? "selected" : ""}
                         ${stock <= 0 ? "disabled" : ""}
                     >
                         ${escapeHTML(label)} -
-                        ₹${price.toFixed(2)}
+                        ₹${formatPrice(price)}
+                        ${mrp > price ? `(MRP ₹${formatPrice(mrp)})` : ""}
                         ${stock <= 0 ? "(Out of stock)" : ""}
                     </option>
                 `;
-
             }).join("");
 
-            const firstVariant = variants[0];
-
-            const initialPrice = firstVariant
-                ? getVariantPrice(firstVariant)
-                : 0;
-
-            const noVariants = variants.length === 0;
+            const noStock = availableVariants.length === 0;
 
             return `
                 <article class="product-card">
@@ -285,43 +333,66 @@
 
                         <p>${escapeHTML(description)}</p>
 
-                        <div class="product-price"
-                            id="product-price-${index}">
-                            ₹${initialPrice.toFixed(2)}
+                        <div
+                            class="product-price"
+                            id="product-price-${index}"
+                        >
+                            ${
+                                firstVariant
+                                    ? `
+                                        <strong>₹${formatPrice(getVariantPrice(firstVariant))}</strong>
+                                        ${
+                                            getVariantMRP(firstVariant) > getVariantPrice(firstVariant)
+                                                ? `<del>₹${formatPrice(getVariantMRP(firstVariant))}</del>`
+                                                : ""
+                                        }
+                                        ${
+                                            getDiscount(firstVariant) > 0
+                                                ? `<span class="product-discount">${getDiscount(firstVariant)}% OFF</span>`
+                                                : ""
+                                        }
+                                    `
+                                    : "Price unavailable"
+                            }
                         </div>
 
-                        ${
-                            noVariants
-                            ? '<p>Variants currently unavailable.</p>'
-                            : `
-                                <label for="variant-${index}">
-                                    Select Weight
-                                </label>
+                        <label for="variant-${index}">
+                            Select Pack Size
+                        </label>
 
-                                <select
-                                    id="variant-${index}"
-                                    class="product-variant-select"
-                                    data-product-index="${index}"
-                                >
-                                    ${variantOptions}
-                                </select>
-                            `
-                        }
+                        <select
+                            id="variant-${index}"
+                            class="product-variant-select"
+                            data-product-index="${index}"
+                            ${noStock ? "disabled" : ""}
+                        >
+                            ${variantOptions}
+                        </select>
+
+                        <p
+                            class="product-stock-message"
+                            id="product-stock-${index}"
+                        >
+                            ${
+                                noStock
+                                    ? "Currently out of stock"
+                                    : "Available"
+                            }
+                        </p>
 
                         <button
                             type="button"
                             class="primary-button"
                             data-add-product="${index}"
-                            ${noVariants ? "disabled" : ""}
+                            ${noStock ? "disabled" : ""}
                         >
-                            Add to Cart
+                            ${noStock ? "Out of Stock" : "Add to Cart"}
                         </button>
 
                     </div>
 
                 </article>
             `;
-
         }).join("");
 
         attachProductEvents();
@@ -329,20 +400,14 @@
 
     // Product card interactions
     function attachProductEvents() {
-
         const productGrid = grid();
 
         if (!productGrid) return;
 
         productGrid.querySelectorAll(".product-variant-select")
             .forEach(select => {
-
                 select.addEventListener("change", function () {
-
-                    const productIndex = Number(
-                        this.dataset.productIndex
-                    );
-
+                    const productIndex = Number(this.dataset.productIndex);
                     const variantIndex = Number(this.value);
 
                     const product = products[productIndex];
@@ -353,39 +418,45 @@
 
                     if (!variant) return;
 
-                    const priceElement = document.getElementById(
-                        `product-price-${productIndex}`
+                    renderPrice(productIndex, variant);
+
+                    const stock = getVariantStock(variant);
+
+                    const stockElement = document.getElementById(
+                        `product-stock-${productIndex}`
                     );
 
-                    if (priceElement) {
-                        priceElement.textContent =
-                            "₹" + getVariantPrice(variant).toFixed(2);
+                    const addButton = productGrid.querySelector(
+                        `[data-add-product="${productIndex}"]`
+                    );
+
+                    if (stockElement) {
+                        stockElement.textContent = stock > 0
+                            ? `Available: ${stock} packs`
+                            : "Currently out of stock";
                     }
 
+                    if (addButton) {
+                        addButton.disabled = stock <= 0;
+                        addButton.textContent = stock <= 0
+                            ? "Out of Stock"
+                            : "Add to Cart";
+                    }
                 });
-
             });
 
         productGrid.querySelectorAll("[data-add-product]")
             .forEach(button => {
-
                 button.addEventListener("click", function () {
-
-                    const productIndex = Number(
-                        this.dataset.addProduct
-                    );
+                    const productIndex = Number(this.dataset.addProduct);
 
                     addProductToCart(productIndex);
-
                 });
-
             });
-
     }
 
     // Add selected product variant to cart
     function addProductToCart(productIndex) {
-
         const product = products[productIndex];
 
         if (!product) return;
@@ -397,7 +468,6 @@
         if (!selector) return;
 
         const variantIndex = Number(selector.value);
-
         const variant = product.variants[variantIndex];
 
         if (!variant) return;
@@ -413,6 +483,8 @@
             name: getProductName(product),
             variant: getVariantName(variant),
             price: getVariantPrice(variant),
+            mrp: getVariantMRP(variant),
+            discount: getDiscount(variant),
             image: getProductImage(product),
             quantity: 1
         };
@@ -421,16 +493,15 @@
             window.ShriCart &&
             typeof window.ShriCart.add === "function"
         ) {
-
             window.ShriCart.add(cartItem);
 
         } else {
-
             console.error("ShriCart is not initialized yet.");
-            alert("Cart service is unavailable. Please refresh the page.");
 
+            alert(
+                "Cart service is unavailable. Please refresh the page."
+            );
         }
-
     }
 
     // Public API
@@ -445,6 +516,11 @@
             return products.find(
                 product => String(product.id) === String(id)
             ) || null;
+        },
+
+        getVariants: function (productId) {
+            const product = this.getById(productId);
+            return product ? product.variants : [];
         },
 
         refresh: loadProducts
