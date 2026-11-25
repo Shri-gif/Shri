@@ -4,596 +4,181 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Shri Spices Admin</title>
+  <title>Shri Spices | Admin Panel</title>
 
   <link rel="stylesheet" href="assets/css/style.css">
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      background: #fcf8f3;
-      color: #30291f;
-      font-family: Arial, sans-serif;
-    }
-
-    .admin-wrapper {
-      max-width: 1100px;
-      margin: auto;
-      padding: 20px;
-    }
-
-    .admin-header {
-      text-align: center;
-      margin-bottom: 25px;
-    }
-
-    .admin-header img {
-      width: 100%;
-      max-width: 300px;
-      object-fit: contain;
-    }
-
-    .admin-card {
-      background: #fff;
-      border: 1px solid #eee4d8;
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 20px;
-      box-shadow: 0 4px 14px rgba(0,0,0,.04);
-    }
-
-    h1, h2, h3 {
-      margin-top: 0;
-    }
-
-    h2 {
-      font-size: 22px;
-    }
-
-    h3 {
-      font-size: 18px;
-      margin-top: 24px;
-    }
-
-    label {
-      display: block;
-      font-weight: 600;
-      margin: 14px 0 7px;
-    }
-
-    input:not([type="checkbox"]),
-    textarea,
-    select {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #ddd;
-      border-radius: 7px;
-      background: white;
-      font: inherit;
-    }
-
-    textarea {
-      resize: vertical;
-      min-height: 100px;
-    }
-
-    input[type="checkbox"] {
-      width: auto;
-      transform: scale(1.15);
-      margin-right: 7px;
-    }
-
-    button {
-      cursor: pointer;
-      padding: 10px 14px;
-      border-radius: 7px;
-      border: 1px solid #d5d5d5;
-      font: inherit;
-      background: #f5f5f5;
-      color: #222;
-    }
-
-    button:disabled {
-      opacity: .6;
-      cursor: not-allowed;
-    }
-
-    .btn-primary {
-      background: #655522;
-      color: white;
-      border-color: #655522;
-    }
-
-    .btn-secondary {
-      background: #f5f5f5;
-      color: #222;
-    }
-
-    .admin-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 18px;
-    }
-
-    .admin-stats {
-      display: flex;
-      gap: 14px;
-      flex-wrap: wrap;
-      margin: 15px 0;
-    }
-
-    .admin-stat {
-      flex: 1;
-      min-width: 140px;
-      background: #f8f5ef;
-      border-radius: 10px;
-      padding: 15px;
-    }
-
-    .admin-stat strong {
-      display: block;
-      font-size: 24px;
-      margin-top: 5px;
-    }
-
-    .admin-table-scroll {
-      width: 100%;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 600px;
-    }
-
-    th, td {
-      text-align: left;
-      padding: 12px 10px;
-      border-bottom: 1px solid #eee;
-      vertical-align: middle;
-    }
-
-    th {
-      background: #f7f3ed;
-      font-weight: 600;
-    }
-
-    .admin-variant-table {
-      min-width: 650px;
-    }
-
-    .admin-variant-table input:not([type="checkbox"]) {
-      min-width: 85px;
-      padding: 10px;
-    }
-
-    .variant-discount {
-      display: block;
-      margin-top: 5px;
-      color: #287a3d;
-      font-size: 12px;
-    }
-
-    .admin-product-message,
-    .admin-variant-message {
-      margin-top: 12px;
-      min-height: 18px;
-    }
-
-    .section-description {
-      color: #777;
-      font-size: 14px;
-      margin-bottom: 15px;
-    }
-
-    .pack-size-section {
-      margin-top: 25px;
-      padding-top: 20px;
-      border-top: 1px solid #eee;
-    }
-
-    .pack-size-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .pack-size-header h3 {
-      margin: 0;
-    }
-
-    .admin-product-message {
-      min-height: 20px;
-    }
-
-    .admin-variant-message {
-      min-height: 20px;
-    }
-
-    .admin-status {
-      margin-top: 15px;
-    }
-
-    .admin-status label {
-      display: inline-flex;
-      align-items: center;
-      margin: 0;
-    }
-
-    .admin-form-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0 20px;
-    }
-
-    .admin-form-grid .full-width {
-      grid-column: 1 / -1;
-    }
-
-    #adminLoginSection {
-      max-width: 500px;
-      margin: auto;
-    }
-
-    #adminDashboardSection[hidden],
-    #adminLoginSection[hidden] {
-      display: none !important;
-    }
-
-    .admin-section-heading {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .admin-section-heading h2 {
-      margin: 0;
-    }
-
-    .admin-product-table {
-      min-width: 800px;
-    }
-
-    .admin-leads-table {
-      min-width: 650px;
-    }
-
-    @media (max-width: 600px) {
-      .admin-wrapper {
-        padding: 12px;
-      }
-
-      .admin-card {
-        padding: 15px;
-      }
-
-      .admin-form-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .admin-form-grid .full-width {
-        grid-column: auto;
-      }
-
-      .admin-stats {
-        gap: 8px;
-      }
-
-      .admin-stat {
-        min-width: 120px;
-      }
-
-      .admin-actions button {
-        flex: 1;
-      }
-
-      .pack-size-header {
-        align-items: flex-start;
-      }
-
-      .admin-variant-table {
-        min-width: 650px;
-      }
-
-      .admin-product-table {
-        min-width: 800px;
-      }
-
-      .admin-leads-table {
-        min-width: 650px;
-      }
-    }
-  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase.js"></script>
+  <script src="assets/js/admin.js" defer></script>
 </head>
 
-<body>
+<body class="admin-page">
 
-  <div class="admin-wrapper">
+  <header class="admin-header">
+    <div class="admin-brand">
+      <img src="assets/images/logo.png" alt="Shri Spices Logo">
+      <div>
+        <h1>Shri Spices</h1>
+        <p>Administration Panel</p>
+      </div>
+    </div>
 
-    <!-- HEADER -->
+    <a href="index.html" class="btn btn-secondary">
+      View Website
+    </a>
+  </header>
 
-    <header class="admin-header">
-      <img src="assets/images/logo.png"
-           alt="Shri Spices Logo"
-           onerror="this.onerror=null;this.src='logo.png';">
+  <main class="admin-container">
 
-      <h1>Shri Spices</h1>
-      <p>Administration Panel</p>
+    <!-- LOGIN SECTION -->
 
-      <a href="./">View Website</a>
-    </header>
+    <section id="adminLoginSection" class="admin-login-section">
+      <div class="admin-card admin-login-card">
 
-    <!-- LOGIN -->
+        <h2>Admin Login</h2>
+        <p>Sign in with your authorized administrator account.</p>
 
-    <section id="adminLoginSection" class="admin-card">
+        <form id="adminLoginForm">
 
-      <h2>Admin Login</h2>
+          <div class="form-group">
+            <label for="adminEmail">Email Address</label>
+            <input
+              type="email"
+              id="adminEmail"
+              name="email"
+              placeholder="Enter admin email"
+              autocomplete="username"
+              required
+            >
+          </div>
 
-      <form id="adminLoginForm">
+          <div class="form-group">
+            <label for="adminPassword">Password</label>
+            <input
+              type="password"
+              id="adminPassword"
+              name="password"
+              placeholder="Enter password"
+              autocomplete="current-password"
+              required
+            >
+          </div>
 
-        <label for="adminEmail">Email</label>
-        <input
-          type="email"
-          id="adminEmail"
-          autocomplete="username"
-          required>
-
-        <label for="adminPassword">Password</label>
-        <input
-          type="password"
-          id="adminPassword"
-          autocomplete="current-password"
-          required>
-
-        <div class="admin-actions">
-          <button
-            type="submit"
-            id="adminLoginButton"
-            class="btn-primary">
+          <button type="submit" id="adminLoginButton" class="btn btn-primary">
             Login
           </button>
-        </div>
 
-        <p id="adminLoginMessage"></p>
+          <p id="adminLoginMessage" class="admin-message" role="status"></p>
 
-      </form>
-
+        </form>
+      </div>
     </section>
 
-    <!-- DASHBOARD -->
 
-    <section id="adminDashboardSection" hidden>
+    <!-- DASHBOARD SECTION -->
 
-      <section class="admin-card">
+    <section id="adminDashboardSection" class="admin-dashboard-section" hidden>
 
-        <div class="admin-section-heading">
+      <div class="admin-dashboard-heading">
+        <div>
           <h2>Dashboard</h2>
-
-          <button
-            type="button"
-            id="adminLogoutButton"
-            class="btn-secondary">
-            Logout
-          </button>
+          <p>Manage your store operations.</p>
         </div>
 
-        <p class="section-description">
-          Manage your Shri Spices store operations.
-        </p>
+        <button type="button" id="adminLogoutButton" class="btn btn-secondary">
+          Logout
+        </button>
+      </div>
 
-        <div class="admin-stats">
 
-          <div class="admin-stat">
-            Total Products
-            <strong id="adminTotalProducts">0</strong>
-          </div>
+      <!-- DASHBOARD STATS -->
 
-          <div class="admin-stat">
-            Total Orders
-            <strong id="adminTotalOrders">0</strong>
-          </div>
+      <div class="admin-stats-grid">
 
-          <div class="admin-stat">
-            B2B Enquiries
-            <strong id="adminTotalLeads">0</strong>
-          </div>
-
+        <div class="admin-stat-card">
+          <span>Total Products</span>
+          <strong id="adminTotalProducts">0</strong>
         </div>
 
-      </section>
+        <div class="admin-stat-card">
+          <span>Total Orders</span>
+          <strong id="adminTotalOrders">0</strong>
+        </div>
+
+        <div class="admin-stat-card">
+          <span>B2B Enquiries</span>
+          <strong id="adminTotalLeads">0</strong>
+        </div>
+
+      </div>
+
 
       <!-- PRODUCT MANAGEMENT -->
 
       <section class="admin-card">
 
         <div class="admin-section-heading">
-          <h2>Product Management</h2>
-
-          <button
-            type="button"
-            id="refreshProductsButton"
-            class="btn-secondary">
+          <h3>Product Management</h3>
+          <button type="button" id="refreshProductsButton" class="btn btn-secondary">
             Refresh
           </button>
         </div>
 
         <form id="adminProductForm">
 
-          <!-- BASIC PRODUCT DETAILS -->
+          <input type="hidden" id="adminProductId">
 
-          <h3>Basic Product Details</h3>
+          <div class="form-grid">
 
-          <div class="admin-form-grid">
-
-            <div class="full-width">
-              <label for="adminProductName">
-                Product Name *
-              </label>
-
-              <input
-                type="text"
-                id="adminProductName"
-                placeholder="e.g. Haldi Powder"
-                required>
+            <div class="form-group">
+              <label for="adminProductName">Product Name</label>
+              <input type="text" id="adminProductName" required>
             </div>
 
-            <div class="full-width">
-              <label for="adminProductSlug">
-                Product Slug *
-              </label>
-
-              <input
-                type="text"
-                id="adminProductSlug"
-                placeholder="haldi-powder"
-                required>
+            <div class="form-group">
+              <label for="adminProductSlug">Product Slug</label>
+              <input type="text" id="adminProductSlug" required>
             </div>
 
-            <div class="full-width">
-              <label for="adminProductImage">
-                Image URL
-              </label>
-
-              <input
-                type="url"
-                id="adminProductImage"
-                placeholder="https://example.com/image.jpg">
+            <div class="form-group">
+              <label for="adminProductImage">Image URL</label>
+              <input type="url" id="adminProductImage">
             </div>
 
-            <div class="full-width">
-              <label for="adminProductCategory">
-                Category ID
-              </label>
-
-              <input
-                type="text"
-                id="adminProductCategory"
-                placeholder="Category ID">
-            </div>
-
-            <div class="full-width">
-              <label for="adminProductDescription">
-                Product Description
-              </label>
-
-              <textarea
-                id="adminProductDescription"
-                placeholder="Enter product description..."></textarea>
+            <div class="form-group">
+              <label for="adminProductCategory">Category ID</label>
+              <input type="text" id="adminProductCategory">
             </div>
 
           </div>
 
-          <div class="admin-status">
-            <label>
-              <input
-                type="checkbox"
-                id="adminProductActive"
-                checked>
-              Active Product
-            </label>
+          <div class="form-group">
+            <label for="adminProductDescription">Description</label>
+            <textarea id="adminProductDescription" rows="3"></textarea>
           </div>
 
-          <!-- INLINE PACK SIZE EDITOR -->
+          <label class="admin-checkbox">
+            <input type="checkbox" id="adminProductActive" checked>
+            Active Product
+          </label>
 
-          <div class="pack-size-section">
-
-            <div class="pack-size-header">
-              <h3>Pack Sizes & Pricing</h3>
-
-              <button
-                type="button"
-                id="addProductVariantButton"
-                class="btn-secondary">
-                + Add Pack Size
-              </button>
-            </div>
-
-            <p class="section-description">
-              Add different pack sizes, prices and stock for this product.
-            </p>
-
-            <div class="admin-table-scroll">
-
-              <table class="admin-variant-table">
-
-                <thead>
-                  <tr>
-                    <th>Pack Size</th>
-                    <th>MRP (₹)</th>
-                    <th>Selling Price (₹)</th>
-                    <th>Stock</th>
-                    <th>Active</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-
-                <tbody id="adminVariantsTableBody">
-
-                  <tr id="adminNoVariantsRow">
-                    <td colspan="6">
-                      No pack sizes added yet. Click Add Pack Size.
-                    </td>
-                  </tr>
-
-                </tbody>
-
-              </table>
-
-            </div>
-
-            <p id="adminVariantMessage"
-               class="admin-variant-message"></p>
-
-          </div>
-
-          <!-- SAVE -->
-
-          <div class="admin-actions">
-
-            <button
-              type="submit"
-              id="saveProductButton"
-              class="btn-primary">
+          <div class="admin-form-actions">
+            <button type="submit" id="saveProductButton" class="btn btn-primary">
               Save Product
             </button>
 
-            <button
-              type="button"
-              id="resetProductFormButton"
-              class="btn-secondary">
+            <button type="button" id="resetProductFormButton" class="btn btn-secondary">
               Clear Form
             </button>
-
           </div>
 
-          <p id="adminProductMessage"
-             class="admin-product-message"></p>
+          <p id="adminProductMessage" class="admin-message" role="status"></p>
 
         </form>
 
-        <!-- ALL PRODUCTS -->
-
-        <h3>All Products</h3>
-
-        <p class="section-description">
-          All products and their pack-size prices are listed below.
-          Use Edit to modify the product and all its pack sizes together.
-        </p>
-
-        <div class="admin-table-scroll">
-
-          <table class="admin-product-table">
+        <div class="admin-table-wrapper">
+          <table class="admin-table">
 
             <thead>
               <tr>
@@ -605,39 +190,31 @@
             </thead>
 
             <tbody id="adminProductsTableBody">
-
               <tr>
-                <td colspan="4">
-                  Loading products...
-                </td>
+                <td colspan="4">Loading products...</td>
               </tr>
-
             </tbody>
 
           </table>
-
         </div>
 
       </section>
 
-      <!-- B2B -->
+
+      <!-- B2B ENQUIRIES -->
 
       <section class="admin-card">
 
         <div class="admin-section-heading">
-          <h2>B2B Enquiries</h2>
+          <h3>B2B Enquiries</h3>
 
-          <button
-            type="button"
-            id="refreshLeadsButton"
-            class="btn-secondary">
+          <button type="button" id="refreshLeadsButton" class="btn btn-secondary">
             Refresh
           </button>
         </div>
 
-        <div class="admin-table-scroll">
-
-          <table class="admin-leads-table">
+        <div class="admin-table-wrapper">
+          <table class="admin-table">
 
             <thead>
               <tr>
@@ -651,34 +228,21 @@
             </thead>
 
             <tbody id="adminLeadsTableBody">
-
               <tr>
-                <td colspan="6">
-                  Loading enquiries...
-                </td>
+                <td colspan="6">Loading enquiries...</td>
               </tr>
-
             </tbody>
 
           </table>
-
         </div>
 
-        <p id="adminLeadsMessage"></p>
+        <p id="adminLeadsMessage" class="admin-message" role="status"></p>
 
       </section>
 
     </section>
 
-  </div>
-
-  <!-- SUPABASE -->
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <script src="js/supabase.js"></script>
-
-  <script src="assets/js/admin.js" defer></script>
+  </main>
 
 </body>
 </html>
