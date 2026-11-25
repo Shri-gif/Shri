@@ -1,43 +1,39 @@
-# Shri Spices Supabase Upgrade
+# Shri Spices — Supabase-connected website
 
-## Included
-- Original storefront layout retained with dynamic catalog.
-- Supabase catalog and variants, browser cart, WhatsApp checkout/UPI intent.
-- B2B inquiry form.
-- Admin login, product editing and first variant, orders list/status, leads list.
-- SQL schema and policies in `database/migrations/001_initial_schema.sql`.
+## What is included
+- Customer storefront with Supabase product catalogue and pack variants.
+- Browser cart and WhatsApp checkout handoff.
+- B2B enquiry submission.
+- Tejas Taxi-inspired admin dashboard: products, pack sizes/prices/stock, orders and B2B leads.
+- Supabase schema and Row Level Security policies in `database/migrations/001_initial_schema.sql`.
 
-## Setup (before replacing the live site)
-1. Back up the current website files and database.
-2. Supabase Dashboard → SQL Editor: run `database/migrations/001_initial_schema.sql`. Existing objects are guarded by `if not exists`/policy drops, but review your existing policies first; don't blindly run on a production database.
-3. Confirm the admin auth account exists, then add its UUID to `public.admin_users` (the provided build expects UUID `add644f1-02c3-46a6-a913-f0ae08a2203e`). Confirm role and access.
-4. Ensure that account can sign in to Supabase Auth and that `admin_users` has the matching user UUID.
-5. Upload folder contents to your web host, preserving relative paths. `index.html` and `admin.html` should be served at the site root.
-6. Admin page: `/admin.html`.
+## Important: connect the new Supabase project
+The browser configuration is in `js/supabase.js`. It uses the supplied project URL `https://yqjvtdzhpjirjiefdfqd.supabase.co` and the supplied `sb_publishable_...` key. A publishable key is intended for browser use. Never put a Supabase secret/service-role key in this repository.
 
-## Checkout caveat
-UPI deep link is not payment confirmation. WhatsApp checkout creates a pending/unverified order record when the insert policy is available; it does not confirm payment or validate prices server-side. Treat customer order data/payment status as untrusted until you implement server-side verification.
+## Required Supabase setup (one-time)
+1. Open the Supabase project matching `yqjvtdzhpjirjiefdfqd`.
+2. In SQL Editor, review and run `database/migrations/001_initial_schema.sql`. This creates the tables and RLS policies expected by this code. If the project already has production tables/data, back them up and review the SQL before running it; `CREATE TABLE IF NOT EXISTS` does not retrofit mismatched columns in existing tables.
+3. In Authentication → Users, create or confirm the admin login account.
+4. Copy that user's UUID. In SQL Editor run the following, replacing the UUID with the actual Auth user UUID:
 
-## Limitations to review
-This is a front-end/admin starter, not a secure full commerce backend. Public order insert policies can be abused, prices are client supplied, cart line items are not currently saved as a normalized order_items transaction, image upload UI and multi-variant management are not yet present in this panel, and banners/promotions/site settings are not editable in the UI. For production, move checkout/order validation to an Edge Function or backend, rate-limit submissions, and review policies.
+   ```sql
+   insert into public.admin_users (user_id, role)
+   values ('PASTE-AUTH-USER-UUID-HERE', 'admin')
+   on conflict (user_id) do update set role = excluded.role;
+   ```
 
-## Folder structure
-- `assets/css/style.css`, `assets/js/` supplemental assets
-- `js/` application modules
-- `database/migrations/` SQL migration
+5. Confirm Email/Password sign-in is enabled in Supabase Authentication.
+6. Deploy the complete repository contents to the GitHub Pages repository root (do not put the files inside an extra `Shri-main/` directory).
 
-## GitHub Pages Actions deployment
-- Place the contents of this `Shri-main` folder at the repository root (not nested inside an extra `Shri-main` directory).
-- Commit and push to the `main` branch, or run the workflow manually from Actions.
-- In GitHub: Settings → Pages → Build and deployment → Source, select **GitHub Actions**.
-- The workflow `.github/workflows/pages.yml` publishes the repository root.
+## Website paths
+- Customer website: `/`
+- Admin panel: `/admin.html`
 
+## GitHub Pages deployment
+The workflow is `.github/workflows/deploy.yml`. In GitHub → Settings → Pages, set Build and deployment Source to **GitHub Actions**. Push to `main` or manually run the workflow from Actions. The workflow uploads the repository root using `actions/upload-pages-artifact@v3` and deploys with `actions/deploy-pages@v4`.
 
-## Updated Admin Dashboard
-- Tejas Taxi-inspired responsive navy sidebar and light dashboard workspace.
-- Dashboard overview cards for total products, active products, orders and new B2B enquiries.
-- Product editor supports product name, description/details, image URL, active status, multiple pack sizes, per-pack selling price and stock.
-- Product table displays each pack size and price under the product, with edit/delete actions for products and individual packs.
-- Orders view supports fulfilment status updates; B2B enquiries view supports lead status updates.
-- Existing Supabase tables and customer storefront/cart scripts are retained. The existing `products` and `product_variants` schema already supports these fields, so this UI update does not require a new SQL migration.
-- Admin login checks the signed-in user against `public.admin_users`. Ensure your admin account is present in that table.
+## Data model alignment
+The JavaScript uses the column names defined in the supplied SQL migration: `products.is_active`, `product_variants.variant_name`, `product_variants.stock_quantity`, `product_variants.is_active`, `orders.order_status`, and `b2b_leads.requirement`.
+
+## Checkout note
+WhatsApp remains the customer checkout handoff. The browser attempts to create a pending order record, but the supplied migration intentionally does not grant anonymous public order insertion. Therefore the WhatsApp message still opens if the database insert is denied; order tracking from WhatsApp requires a trusted server/Edge Function or an explicitly reviewed public-order policy. Do not expose service-role credentials in frontend code.
