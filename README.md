@@ -25,3 +25,19 @@ This is a front-end/admin starter, not a secure full commerce backend. Public or
 - `assets/css/style.css`, `assets/js/` supplemental assets
 - `js/` application modules
 - `database/migrations/` SQL migration
+
+## GitHub Pages Actions deployment
+- Place the contents of this `Shri-main` folder at the repository root (not nested inside an extra `Shri-main` directory).
+- Commit and push to the `main` branch, or run the workflow manually from Actions.
+- In GitHub: Settings → Pages → Build and deployment → Source, select **GitHub Actions**.
+- The workflow `.github/workflows/pages.yml` publishes the repository root.
+
+
+## Updated Admin Dashboard
+- Tejas Taxi-inspired responsive navy sidebar and light dashboard workspace.
+- Dashboard overview cards for total products, active products, orders and new B2B enquiries.
+- Product editor supports product name, description/details, image URL, active status, multiple pack sizes, per-pack selling price and stock.
+- Product table displays each pack size and price under the product, with edit/delete actions for products and individual packs.
+- Orders view supports fulfilment status updates; B2B enquiries view supports lead status updates.
+- Existing Supabase tables and customer storefront/cart scripts are retained. The existing `products` and `product_variants` schema already supports these fields, so this UI update does not require a new SQL migration.
+- Admin login checks the signed-in user against `public.admin_users`. Ensure your admin account is present in that table.

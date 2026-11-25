@@ -1,500 +1,390 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shri, the Divine Flavor - Premium Spices</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #ff9a56 0%, #ff6b35 100%);
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+    display: flex;
+    align-items: center;
+    padding-upper: 2px 0;
+    padding-bottom:2px 0; 
+    gap: 10px;
+}
 
-    <title>Shri Spices – The Divine Flavor</title>
+.logo img {
+    width: 50px;
+    height: 50px;
+    filter: drop-shadow(0 0 5px rgba(0,0,0,0.5));
+    border-radius: 50%;
+}
 
-    <meta name="description" content="Shop pure, authentic and freshly processed Indian spices from Shri Spices.">
-    <meta name="theme-color" content="#ff6b35">
+.logo span {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #ff6b35;
+} 
+        
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+        .nav-links a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        .nav-links a:hover {
+            color: #ff6b35;
+        }
+         .hero {
+  position: relative;
+  background: url('https://i.supaimg.com/91425b33-c00e-4e4b-9924-cef6cb565405/23a10456-9f77-4380-a0ee-92a1bd5338d5.jpg') center/cover no-repeat;
+  height: 100vh;
+  display: flex;
+  background-size: cover;
+  background-position: center;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: white;
+  margin-top: 60px;
+  overflow: hidden;
+}
+        .hero::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1;
+        } 
+            .hero-content {
+  position: relative;
+  z-index: 2;
+            } 
+        .hero-content h1 {
+            font-size: clamp(2rem, 5vw, 4rem);
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        .hero-content p {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .cta-button {
+            display: inline-block;
+            background: #ff6b35;
+            color: white;
+            padding: 1rem 2rem;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(255,107,53,0.4);
+        }
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(255,107,53,0.6);
+        }
+        .section {
+            padding: 5rem 0;
+        }
+        .section-title {
+            text-align: center;
+            font-size: 3rem;
+            margin-bottom: 3rem;
+            color: #ff6b35;
+        }
+        .products {
+            background: white;
+        }
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+        .product-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+            text-align: center;
+            padding: 2rem;
+        }
+        .product-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        .product-card img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            border-radius: 15px;
+        }
+        .product-card h3 {
+            font-size: 1.8rem;
+            margin: 1rem 0;
+            color: #ff6b35;
+        }
+        .product-card p {
+            color: #666;
+            margin-bottom: 1.5rem;
+        }
 
-    <link rel="icon" href="logo.png">
-    <link rel="stylesheet" href="assets/css/style.css">
+        .whyshri {
+            background: rgba(255,255,255,0.9);
+            text-align: center;
+        }
+        .whyshri-content {
+            max-width: 800px;
+            margin: 0 auto;
+            font-size: 1.2rem;
+        }
+        
+        .about {
+            background: rgba(255,255,255,0.9);
+            text-align: center;
+        }
+        .about-content {
+            max-width: 800px;
+            margin: 0 auto;
+            font-size: 1.2rem;
+        }
+        .contact {
+            background: #ff6b35;
+            color: white;
+            text-align: center;
+        }
+        .contact-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+        .contact-item {
+            background: rgba(255,255,255,0.2);
+            padding: 2rem;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        .contact-item h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        footer {
+            background: #333;
+            color: white;
+            text-align: center;
+            padding: 2rem 0;
+        }
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            .hero-content h1 {
+                font-size: 2.5rem;
+            }
+            .section-title {
+                font-size: 2rem;
+            }
+            #cart button {
+    margin-left: 5px;
+    padding: 5px 8px;
+    border: none;
+    background: #ff6b35;
+    color: white;
+    border-radius: 10px;
+    cursor: pointer;
+    } 
 
-    <!-- Supabase library -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-    <!-- Application scripts: load in this exact order -->
-    <script defer src="js/supabase.js"></script>
-    <script defer src="js/products.js"></script>
-    <script defer src="js/cart.js"></script>
-    <script defer src="js/checkout.js"></script>
-    <script defer src="js/b2b.js"></script>
-</head>
-
+#cart button:hover {
+    background: #e85a2a;
+}
+            #cart li {
+    margin-bottom: 10px;
+            }
+        }
+        #cart {
+    background: white;
+    padding: 15px;
+    margin: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+        .trust-box{
+    display:flex;
+    justify-content:flex-end;
+    gap:15px;
+    flex-wrap:wrap;
+    margin-top:10px;
+    font-size:13px;
+    font-weight:600;
+    color:#2d6a4f;
+}
+    </style>
+<link rel="stylesheet" href="assets/css/style.css"></head>
 <body>
-
-    <!-- HEADER -->
-    <header id="site-header">
-        <nav class="container navbar">
-
-            <a href="#home" class="logo">
-                <img src="logo.png" alt="Shri Spices Logo">
-                <span>Shri Spices</span>
-            </a>
-
-            <button
-                class="mobile-menu-button"
-                id="mobileMenuButton"
-                type="button"
-                aria-label="Toggle navigation"
-                aria-expanded="false">
-                ☰
-            </button>
-
-            <ul class="nav-links" id="navLinks">
+    <header>
+        <nav class="container"> 
+        <div class="logo">
+  <img src="logo.png" alt="Shri Spices Logo">
+  <span>Shri Spices</span>
+        </div> 
+            <ul class="nav-links">
                 <li><a href="#home">Home</a></li>
                 <li><a href="#products">Products</a></li>
                 <li><a href="#whyshri">Why Shri</a></li>
                 <li><a href="#about">About</a></li>
-                <li><a href="#wholesale">Wholesale</a></li>
                 <li><a href="#contact">Contact</a></li>
             </ul>
-
         </nav>
     </header>
 
-
-    <!-- HERO SECTION -->
-    <main>
-
-        <section id="home" class="hero">
-
-            <div class="hero-content">
-
-                <h1>🌿 Shri, the Divine Flavor</h1>
-
-                <p>
-                    Pure, Authentic Spices Straight from Nature's Heart
-                </p>
-
-                <a href="#products" class="cta-button">
-                    Discover Our Spices
-                </a>
-
-            </div>
-
-        </section>
-
-
-        <!-- PRODUCTS SECTION -->
-        <section id="products" class="section products">
-
-            <div class="container">
-
-                <h2 class="section-title">
-                    Our Premium Spices
-                </h2>
-
-                <p class="section-subtitle">
-                    Freshness, purity and authentic taste in every pack.
-                </p>
-
-                <div
-                    class="product-grid"
-                    id="productGrid"
-                    aria-live="polite">
-
-                    <div class="loading-message">
-                        Loading our products...
-                    </div>
-
-                </div>
-
-                <p
-                    id="productError"
-                    class="error-message"
-                    role="alert"
-                    hidden>
-                </p>
-
-            </div>
-
-        </section>
-
-
-        <!-- CART SECTION -->
-        <section id="cart" class="section cart-section">
-
-            <div class="container">
-
-                <h2 class="section-title">
-                    🛒 Your Shopping Cart
-                </h2>
-
-                <div class="cart-box">
-
-                    <div id="cart-empty-message">
-                        Your cart is currently empty.
-                    </div>
-
-                    <ul id="cart-items" class="cart-items"></ul>
-
-                    <div class="cart-summary">
-
-                        <p>
-                            <strong>
-                                Total:
-                                ₹<span id="total">0.00</span>
-                            </strong>
-                        </p>
-
-                        <p class="cart-delivery-note">
-                            Free delivery above ₹499
-                        </p>
-
-                    </div>
-
-                    <div class="cart-actions">
-
-                        <button
-                            type="button"
-                            id="checkoutBtn"
-                            class="primary-button">
-                            Proceed to Checkout
-                        </button>
-
-                        <button
-                            type="button"
-                            id="upiPayBtn"
-                            class="secondary-button">
-                            💳 Pay via UPI
-                        </button>
-
-                        <button
-                            type="button"
-                            id="whatsappOrderBtn"
-                            class="whatsapp-button">
-                            📩 Order on WhatsApp
-                        </button>
-
-                    </div>
-
-                    <div class="trust-box">
-                        <span>✅ Freshly Processed</span>
-                        <span>✅ Quality Checked</span>
-                        <span>🚚 Free Delivery Above ₹499</span>
-                    </div>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- WHY SHRI -->
-        <section id="whyshri" class="section whyshri">
-
-            <div class="container">
-
-                <h2 class="section-title">
-                    Why Shri?
-                </h2>
-
-                <div class="whyshri-content">
-
-                    <p>
-                        At Shri, we believe that great food begins with pure
-                        ingredients. Many spices available in the market
-                        travel through long supply chains before reaching
-                        your kitchen. Our goal is simple: source quality raw
-                        spices, process them carefully, and deliver fresh
-                        flavors that families can trust.
-                    </p>
-
-                    <h3>What Makes Shri Different?</h3>
-
-                    <h4>Carefully Sourced Ingredients</h4>
-                    <p>
-                        We focus on selecting quality raw spices from trusted
-                        sourcing regions known for their produce.
-                    </p>
-
-                    <h4>Freshly Processed</h4>
-                    <p>
-                        Our spices are processed in small batches to help
-                        preserve their natural aroma, color and flavor.
-                    </p>
-
-                    <h4>No Unnecessary Additions</h4>
-                    <p>
-                        We believe spices should taste the way nature intended.
-                    </p>
-
-                    <h4>Quality You Can Trust</h4>
-                    <p>
-                        Every batch is handled with attention to cleanliness,
-                        consistency and freshness.
-                    </p>
-
-                    <h4>Made for Everyday Kitchens</h4>
-                    <p>
-                        Whether it is a simple family meal or a special
-                        occasion, Shri spices bring authentic flavor to
-                        every dish.
-                    </p>
-
-                    <h3>Our Promise</h3>
-
-                    <p>
-                        Pure ingredients. Authentic taste. Honest quality.
-                        Because every meal deserves the flavor of trust.
-                    </p>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- ABOUT SECTION -->
-        <section id="about" class="section about">
-
-            <div class="container">
-
-                <h2 class="section-title">
-                    About Vimal Shukla
-                </h2>
-
-                <div class="about-content">
-
-                    <p>
-                        Hi, I am <strong>Vimal Shukla</strong>, the heart
-                        behind <strong>Shri, the Divine Flavor</strong>.
-                        Shri started with a simple idea: to make quality
-                        spices accessible without unnecessary complexity.
-                    </p>
-
-                    <p>
-                        Every batch is processed with care to preserve
-                        maximum flavor and aroma. Experience the divine
-                        taste that elevates every meal.
-                    </p>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- WHOLESALE / B2B SECTION -->
-        <section id="wholesale" class="section wholesale">
-
-            <div class="container">
-
-                <h2 class="section-title">
-                    Wholesale & Bulk Enquiries
-                </h2>
-
-                <p class="section-subtitle">
-                    Interested in bulk orders, retail distribution or
-                    business partnerships? Contact us.
-                </p>
-
-                <form id="b2bForm" class="b2b-form">
-
-                    <div class="form-group">
-                        <label for="b2bName">Your Name</label>
-                        <input
-                            type="text"
-                            id="b2bName"
-                            name="name"
-                            placeholder="Enter your name"
-                            required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="b2bBusiness">Business Name</label>
-                        <input
-                            type="text"
-                            id="b2bBusiness"
-                            name="business_name"
-                            placeholder="Enter business name">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="b2bPhone">Phone Number</label>
-                        <input
-                            type="tel"
-                            id="b2bPhone"
-                            name="phone"
-                            placeholder="Enter phone number"
-                            required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="b2bEmail">Email Address</label>
-                        <input
-                            type="email"
-                            id="b2bEmail"
-                            name="email"
-                            placeholder="Enter email address">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="b2bRequirement">
-                            Products / Requirements
-                        </label>
-                        <textarea
-                            id="b2bRequirement"
-                            name="requirements"
-                            rows="4"
-                            placeholder="Tell us about your products, quantity and requirements"
-                            required></textarea>
-                    </div>
-
-                    <button
-                        type="submit"
-                        class="primary-button">
-                        Submit Business Enquiry
-                    </button>
-
-                    <p
-                        id="b2bMessage"
-                        class="form-message"
-                        role="status">
-                    </p>
-
-                </form>
-
-            </div>
-
-        </section>
-
-
-        <!-- CONTACT SECTION -->
-        <section id="contact" class="section contact">
-
-            <div class="container">
-
-                <h2 class="section-title">
-                    Get in Touch
-                </h2>
-
-                <div class="contact-info">
-
-                    <div class="contact-item">
-                        <h3>📞 Call Us</h3>
-                        <p>
-                            <a href="tel:+917379969545">
-                                7379969545
-                            </a>
-                        </p>
-                    </div>
-
-                    <div class="contact-item">
-                        <h3>✉️ Email</h3>
-                        <p>
-                            <a href="mailto:vimalshukla282@gmail.com">
-                                vimalshukla282@gmail.com
-                            </a>
-                        </p>
-                    </div>
-
-                    <div class="contact-item">
-                        <h3>📍 Location</h3>
-                        <p>
-                            Premium Spices Delivered – Lucknow
-                        </p>
-                    </div>
-
-                </div>
-
-            </div>
-
-        </section>
-
-    </main>
-
-
-    <!-- FOOTER -->
-    <footer class="site-footer">
-
-        <div class="container">
-
-            <p>
-                &copy; <span id="currentYear"></span>
-                Shri, the Divine Flavor. All rights reserved.
-            </p>
-
-            <p>Vimal Shukla</p>
-
+    <section id="home" class="hero">
+        <div class="hero-content">
+            <h1>🌿 Shri, the Divine Flavor</h1>
+            <p>Pure, Authentic Spices Straight from Nature's Heart</p>
+            <a href="#products" class="cta-button">Discover Our Spices</a>
         </div>
+    </section>
 
+    <section id="products" class="section products">
+        <div class="container">
+            <h2 class="section-title">Our Premium Spices</h2>
+            <div class="product-grid" id="dynamic-product-grid"><p>Loading products…</p></div>
+        </div>
+    </section>
+    
+    <div id="cart">
+  <h3>🛒 Cart</h3>
+  <ul id="cart-items"></ul>
+  <button onclick="sendWhatsApp()">Checkout / Order on WhatsApp</button>
+  <p><strong>Total: ₹<span id="total">0</span></strong></p>
+        <p style="font-size:12px; color:green;">
+    🔥 Best Seller: 250g Pack (Most Popular)
+        </p>
+  <button onclick="upiPay()">💳 Pay via UPI</button>
+  <button onclick="sendWhatsApp()">📩 Order on WhatsApp</button>
+        <div class="trust-box">
+    <span>✅ Freshly Ground</span>
+    <span>✅ Quality Checked</span>
+    <span>🚚 Free delivery above 499</span>
+        </div>
+    </div> 
+
+    <section id="whyshri" class="section whyshri">
+        <div class="container">
+            <h2 class="section-title">Why Shri?</h2>
+            <div class="whyshri-content">
+                <p> At Shri, we believe that great food begins with pure ingredients.
+Many spices available in the market travel through long supply chains before reaching your kitchen. Our goal is simple: source quality raw spices, process them carefully, and deliver fresh flavors that families can trust.</p>
+
+           <p><strong>What Makes Shri Different?</strong></p>
+                    
+<p><strong>Carefully Sourced Ingredients</strong></p>
+<p>We focus on selecting quality raw spices from trusted sourcing regions known for their produce.</p>
+                    
+<p><strong>Freshly Processed</strong></p>
+<p>Our spices are processed in small batches to help preserve their natural aroma, color, and flavor.</p>
+                    
+<p><strong>No Unnecessary Additions</strong></p>
+<p>We believe spices should taste the way nature intended.</p>
+                    
+<p><strong>Quality You Can Trust</strong></p>
+<p>Every batch is handled with attention to cleanliness, consistency, and freshness.</p>
+                    
+<p><strong>Made for Everyday Kitchens</strong></p>
+<p>Whether it's a simple family meal or a special occasion, Shri spices are crafted to bring authentic flavor to every dish.</p>
+                    
+<p><strong>Our Promise</strong></p>
+<p>Pure ingredients. Authentic taste. Honest quality.
+Because every meal deserves the flavor of trust.</p>
+            </div> 
+         </div>
+    </section>
+    
+    <section id="about" class="section about">
+        <div class="container">
+            <h2 class="section-title">About Vimal Shukla</h2>
+            <div class="about-content">
+                <p>Hi, I'm <strong>Vimal Shukla</strong>, the heart behind <strong>Shri, the Divine Flavor</strong>.Shri started with a simple idea: to make quality spices accessible without unnecessary complexity.</p>
+                <p>Every batch is ground fresh to preserve maximum flavor and aroma. Experience the divine taste that elevates every meal to perfection!</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="wholesale" class="section about"><div class="container"><h2 class="section-title">Wholesale / B2B Inquiry</h2><div class="about-content"><form id="b2b-form" style="display:grid;gap:12px;max-width:650px;margin:auto"><input name="name" placeholder="Your name" required><input name="business" placeholder="Business / Restaurant name"><input name="phone" placeholder="Phone number" required><input name="email" type="email" placeholder="Email (optional)"><textarea name="requirements" rows="4" placeholder="Products, quantity, delivery location" required></textarea><button class="cta-button" type="submit">Send Wholesale Inquiry</button><p id="b2b-status"></p></form></div></div></section>
+<section id="contact" class="section contact">
+        <div class="container">
+            <h2 class="section-title">Get in Touch</h2>
+            <div class="contact-info">
+                <div class="contact-item">
+                    <h3>📞 Call Us</h3>
+                    <p><strong>7379969545</strong></p>
+                </div>
+                <div class="contact-item">
+                    <h3>✉️ Email</h3>
+                    <p><strong>vimalshukla282@gmail.com</strong></p>
+                </div>
+                <div class="contact-item">
+                    <h3>📍 Location</h3>
+                    <p>Premium Spices Delivered Lucknow </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 Shri, the Divine Flavor. All rights reserved. | Vimal Shukla</p>
+            <p>👀 Visitors: <span id="visits">Loading...</span></p>
+        </div>
     </footer>
 
-
-    <!-- BASIC PAGE INTERACTIONS -->
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-
-            // Current year
-            const yearElement = document.getElementById("currentYear");
-
-            if (yearElement) {
-                yearElement.textContent = new Date().getFullYear();
-            }
-
-            // Smooth navigation
-            document.querySelectorAll('a[href^="#"]').forEach(function (link) {
-
-                link.addEventListener("click", function (event) {
-
-                    const target = document.querySelector(
-                        this.getAttribute("href")
-                    );
-
-                    if (target) {
-                        event.preventDefault();
-
-                        target.scrollIntoView({
-                            behavior: "smooth",
-                            block: "start"
-                        });
-                    }
-
-                });
-
-            });
-
-            // Mobile navigation
-            const menuButton = document.getElementById("mobileMenuButton");
-            const navLinks = document.getElementById("navLinks");
-
-            if (menuButton && navLinks) {
-
-                menuButton.addEventListener("click", function () {
-
-                    const expanded =
-                        menuButton.getAttribute("aria-expanded") === "true";
-
-                    menuButton.setAttribute(
-                        "aria-expanded",
-                        String(!expanded)
-                    );
-
-                    navLinks.classList.toggle("active");
-
-                });
-
-                navLinks.querySelectorAll("a").forEach(function (link) {
-
-                    link.addEventListener("click", function () {
-                        navLinks.classList.remove("active");
-                        menuButton.setAttribute("aria-expanded", "false");
-                    });
-
-                });
-
-            }
-
-        });
-    </script>
-
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/supabase.js"></script><script src="js/products.js"></script>
+<script src="js/cart.js"></script><script src="js/checkout.js"></script><script src="js/b2b.js"></script>
+<script>
+ document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();document.querySelector(a.getAttribute('href'))?.scrollIntoView({behavior:'smooth'});}));
+ window.addEventListener('scroll',()=>{const h=document.querySelector('header');h.style.background=window.scrollY>100?'rgba(255,255,255,.98)':'rgba(255,255,255,.95)';});
+</script>
 </body>
 </html>
