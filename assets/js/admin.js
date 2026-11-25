@@ -1,396 +1,156 @@
-(function () {
-  "use strict";
-
-  let supabase = null;
-  let products = [];
-  let currentVariants = [];
-  let deletedVariantIds = [];
-
+(() => {
+  'use strict';
   const $ = id => document.getElementById(id);
-
-  function showMessage(id, message, isError = false) {
-    const element = $(id);
-    if (!element) return;
-    element.textContent = message || "";
-    element.style.color = isError ? "#c62828" : "#287a3d";
+  const state = { products: [], orders: [], leads: [], view: 'dashboard', variantCounter: 0 };
+  const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const money = value => `₹${Number(value || 0).toLocaleString('en-IN',{maximumFractionDigits:2})}`;
+  let toastTimer;
+  function toast(message) { const el=$('toast'); el.textContent=message; el.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('show'),2600); }
+  function setMessage(message, success=false) { $('formMessage').textContent=message; $('formMessage').classList.toggle('success',success); }
+  function setView(view) {
+    state.view=view;
+    document.querySelectorAll('.view').forEach(el=>el.classList.toggle('active',el.id===`view-${view}`));
+    document.querySelectorAll('.nav-item[data-view]').forEach(el=>el.classList.toggle('active',el.dataset.view===view));
+    $('pageTitle').textContent=({dashboard:'Dashboard',products:'Products',orders:'Orders',leads:'B2B Enquiries'})[view]||'Dashboard';
+    $('sidebar').classList.remove('open');
+    if(view==='products') renderProducts();
+    if(view==='orders') renderOrders();
+    if(view==='leads') renderLeads();
   }
+  document.querySelectorAll('.nav-item[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
+  document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.go)));
+  $('menuBtn').addEventListener('click',()=>$('sidebar').classList.toggle('open'));
+  $('topRefresh').addEventListener('click',refreshAll);
+  $('quickAdd').addEventListener('click',()=>openProductModal());
+  $('addProductBtn').addEventListener('click',()=>openProductModal());
+  $('closeModal').addEventListener('click',closeProductModal);
+  $('cancelProduct').addEventListener('click',closeProductModal);
+  $('productModal').addEventListener('click',e=>{if(e.target===$('productModal'))closeProductModal();});
+  $('addVariantBtn').addEventListener('click',()=>addVariantRow());
+  $('productSearch').addEventListener('input',renderProducts);
 
-  function escapeHTML(value) {
-    return String(value ?? "").replace(/[&<>"']/g, character => ({
-      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
-    }[character]));
-  }
-
-  function money(value) {
-    const number = Number(value);
-    return Number.isFinite(number) ? number.toFixed(2) : "0.00";
-  }
-
-  function initializeSupabase() {
-    return (async () => {
-      if (window.shriSupabaseReady) await window.shriSupabaseReady;
-      if (!window.shriSupabase) throw new Error("Supabase connection is unavailable.");
-      supabase = window.shriSupabase;
-    })();
-  }
-
-  async function checkAdminSession() {
-    const { data, error } = await supabase.auth.getSession();
-    if (error) throw error;
-
-    if (!data.session) {
-      showLogin();
-      return;
-    }
-
-    const { data: admin, error: adminError } = await supabase
-      .from("admin_users")
-      .select("user_id, role")
-      .eq("user_id", data.session.user.id)
-      .maybeSingle();
-
-    if (adminError) throw adminError;
-
-    if (!admin) {
-      await supabase.auth.signOut();
-      showLogin();
-      showMessage("adminLoginMessage", "This account is not authorized as an administrator.", true);
-      return;
-    }
-
-    showDashboard();
-    await loadDashboard();
-  }
-
-  function showLogin() {
-    $("adminLoginSection").hidden = false;
-    $("adminDashboardSection").hidden = true;
-  }
-
-  function showDashboard() {
-    $("adminLoginSection").hidden = true;
-    $("adminDashboardSection").hidden = false;
-  }
-
-  async function login(event) {
-    event.preventDefault();
-    const email = $("adminEmail").value.trim();
-    const password = $("adminPassword").value;
-    const button = $("adminLoginButton");
-
-    if (!email || !password) {
-      showMessage("adminLoginMessage", "Enter email and password.", true);
-      return;
-    }
-
-    button.disabled = true;
-    button.textContent = "Signing in...";
-    try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      await checkAdminSession();
-    } catch (error) {
-      console.error("Admin login error:", error);
-      showMessage("adminLoginMessage", error.message || "Login failed. Please try again.", true);
-    } finally {
-      button.disabled = false;
-      button.textContent = "Login";
-    }
-  }
-
-  async function logout() {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      showLogin();
-      $("adminLoginForm").reset();
-    } catch (error) {
-      console.error("Admin logout error:", error);
-      alert("Could not log out. Please try again.");
-    }
-  }
-
-  async function loadDashboard() {
-    await Promise.all([loadProducts(), loadStats(), loadLeads()]);
-  }
-
-  async function loadStats() {
-    try {
-      const [p, o, l] = await Promise.all([
-        supabase.from("products").select("id", { count: "exact", head: true }),
-        supabase.from("orders").select("id", { count: "exact", head: true }),
-        supabase.from("b2b_leads").select("id", { count: "exact", head: true })
-      ]);
-      if (p.error) throw p.error;
-      if (o.error) throw o.error;
-      if (l.error) throw l.error;
-      $("adminTotalProducts").textContent = p.count ?? 0;
-      $("adminTotalOrders").textContent = o.count ?? 0;
-      $("adminTotalLeads").textContent = l.count ?? 0;
-    } catch (error) {
-      console.error("Dashboard stats error:", error);
-    }
-  }
-
-  async function fetchVariants(productIds) {
-    if (!productIds.length) return [];
-    const { data, error } = await supabase
-      .from("product_variants")
-      .select("*")
-      .in("product_id", productIds);
-    if (error) throw error;
-    return data || [];
-  }
-
-  function variantLabel(variant) {
-    return variant.weight ?? variant.variant_name ?? variant.name ?? variant.size ?? variant.quantity ?? "Standard";
-  }
-
-  function variantPrice(variant) {
-    return Number(variant.price ?? variant.selling_price ?? variant.sale_price ?? 0);
-  }
-
-  function variantMrp(variant) {
-    return Number(variant.mrp ?? variant.original_price ?? variant.price ?? 0);
-  }
-
-  function variantStock(variant) {
-    return Number(variant.stock ?? variant.stock_quantity ?? variant.quantity_available ?? 0);
-  }
-
-  async function loadProducts() {
-    const tbody = $("adminProductsTableBody");
-    tbody.innerHTML = '<tr><td colspan="7">Loading products...</td></tr>';
-
-    try {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-
-      products = data || [];
-      $("adminTotalProducts").textContent = products.length;
-      const variants = await fetchVariants(products.map(product => product.id));
-      if (!products.length) {
-        tbody.innerHTML = '<tr><td colspan="7">No products found.</td></tr>';
-        return;
-      }
-
-      tbody.innerHTML = products.map(product => {
-        const ownVariants = variants.filter(v => String(v.product_id) === String(product.id));
-        const productRows = ownVariants.length ? ownVariants : [null];
-        return productRows.map((variant, index) => `<tr>
-          <td>${index === 0 ? `<strong>${escapeHTML(product.name)}</strong><br><small>${escapeHTML(product.slug || "")}</small>` : `<span class="admin-muted">${escapeHTML(product.name)}</span>`}</td>
-          <td>${variant ? escapeHTML(variantLabel(variant)) : "—"}</td>
-          <td>${variant ? `₹${money(variantMrp(variant))}` : "—"}</td>
-          <td>${variant ? `₹${money(variantPrice(variant))}` : "—"}</td>
-          <td>${variant ? escapeHTML(variantStock(variant)) : "—"}</td>
-          <td>${product.is_active && (!variant || (variant.is_active ?? variant.active ?? true)) ? "Active" : "Inactive"}</td>
-          <td class="admin-product-actions">
-            ${index === 0 ? `<button type="button" class="btn btn-secondary admin-edit-product" data-id="${escapeHTML(product.id)}">Edit Product</button>` : ""}
-            ${variant ? `<button type="button" class="btn btn-secondary admin-edit-variant" data-id="${escapeHTML(variant.id)}">Edit Pack</button>` : ""}
-            ${index === productRows.length - 1 ? `<button type="button" class="btn btn-secondary admin-add-variant" data-product-id="${escapeHTML(product.id)}">+ Pack Size</button>` : ""}
-          </td>
-        </tr>`).join("");
-      }).join("");
-    } catch (error) {
-      console.error("Products loading error:", error);
-      tbody.innerHTML = '<tr><td colspan="7">Could not load products. Check products/product_variants permissions and columns.</td></tr>';
-    }
-  }
-
-  async function editVariantInTable(variantId) {
-    const { data, error } = await supabase.from("product_variants").select("*").eq("id", variantId).single();
-    if (error) { alert("Could not load pack size: " + error.message); return; }
-
-    const weight = prompt("Pack Size (e.g. 100g)", variantLabel(data));
-    if (weight === null) return;
-    const mrpText = prompt("MRP (₹)", data.mrp ?? "");
-    if (mrpText === null) return;
-    const priceText = prompt("Selling Price (₹)", data.price ?? "");
-    if (priceText === null) return;
-    const stockText = prompt("Stock quantity", data.stock ?? 0);
-    if (stockText === null) return;
-
-    const mrp = mrpText.trim() === "" ? null : Number(mrpText);
-    const price = Number(priceText);
-    const stock = Number(stockText);
-    if (!weight.trim() || (mrp !== null && (!Number.isFinite(mrp) || mrp < 0)) ||
-        !Number.isFinite(price) || price < 0 || !Number.isFinite(stock) || stock < 0) {
-      alert("Please enter valid pack size, MRP, selling price and stock.");
-      return;
-    }
-
-    const { error: updateError } = await supabase.from("product_variants").update({
-      weight: weight.trim(), mrp, price, stock
-    }).eq("id", variantId);
-    if (updateError) { alert("Could not update pack size: " + updateError.message); return; }
-    await loadProducts();
-  }
-
-  async function addVariantFromTable(productId) {
-    const weight = prompt("New Pack Size (e.g. 100g)");
-    if (weight === null) return;
-    const mrpText = prompt("MRP (₹)", "");
-    if (mrpText === null) return;
-    const priceText = prompt("Selling Price (₹)", "");
-    if (priceText === null) return;
-    const stockText = prompt("Stock quantity", "0");
-    if (stockText === null) return;
-
-    const mrp = mrpText.trim() === "" ? null : Number(mrpText);
-    const price = Number(priceText);
-    const stock = Number(stockText);
-    if (!weight.trim() || (mrp !== null && (!Number.isFinite(mrp) || mrp < 0)) ||
-        !Number.isFinite(price) || price < 0 || !Number.isFinite(stock) || stock < 0) {
-      alert("Please enter valid pack size, MRP, selling price and stock.");
-      return;
-    }
-
-    const { error } = await supabase.from("product_variants").insert([{
-      product_id: productId, weight: weight.trim(), mrp, price, stock, is_active: true
-    }]);
-    if (error) { alert("Could not add pack size: " + error.message); return; }
-    await loadProducts();
-  }
-
-  function resetProductForm() {
-    $("adminProductForm").reset();
-    $("adminProductId").value = "";
-    $("adminProductActive").checked = true;
-    currentVariants = [];
-    deletedVariantIds = [];
-    $("saveProductButton").textContent = "Save Product";
-    showMessage("adminProductMessage", "");
-    showMessage("adminVariantMessage", "");
-  }
-
-  async function editProduct(productId) {
-    const product = products.find(item => String(item.id) === String(productId));
-    if (!product) return;
-
-    $("adminProductId").value = product.id;
-    $("adminProductName").value = product.name || "";
-    $("adminProductSlug").value = product.slug || "";
-    $("adminProductImage").value = product.image_url || "";
-    $("adminProductCategory").value = product.category_id || "";
-    $("adminProductDescription").value = product.description || "";
-    $("adminProductActive").checked = Boolean(product.is_active);
-    $("saveProductButton").textContent = "Update Product";
-    $("adminProductForm").scrollIntoView({ behavior: "smooth", block: "center" });
-  }
-
-  async function saveProduct(event) {
-    event.preventDefault();
-    const productId = $("adminProductId").value;
-    const productData = {
-      name: $("adminProductName").value.trim(),
-      slug: $("adminProductSlug").value.trim(),
-      image_url: $("adminProductImage").value.trim() || null,
-      category_id: $("adminProductCategory").value.trim() || null,
-      description: $("adminProductDescription").value.trim() || null,
-      is_active: $("adminProductActive").checked
-    };
-
-    if (!productData.name || !productData.slug) {
-      showMessage("adminProductMessage", "Name and slug are required.", true);
-      return;
-    }
-
-    const button = $("saveProductButton");
-    button.disabled = true;
-    button.textContent = "Saving...";
-    try {
-      let result;
-      if (productId) {
-        result = await supabase.from("products").update(productData).eq("id", productId);
-      } else {
-        result = await supabase.from("products").insert([productData]);
-      }
-      if (result.error) throw result.error;
-      showMessage("adminProductMessage", productId ? "Product updated successfully." : "Product saved successfully. Add pack sizes from the All Products table.");
-      resetProductForm();
-      await Promise.all([loadProducts(), loadStats()]);
-    } catch (error) {
-      console.error("Product save error:", error);
-      showMessage("adminProductMessage", error.message || "Could not save product.", true);
-    } finally {
-      button.disabled = false;
-      button.textContent = $("adminProductId").value ? "Update Product" : "Save Product";
-    }
-  }
-
-  async function loadLeads() {
-    const tbody = $("adminLeadsTableBody");
-    tbody.innerHTML = '<tr><td colspan="6">Loading enquiries...</td></tr>';
-    try {
-      const { data, error } = await supabase.from("b2b_leads").select("*").order("created_at", { ascending: false });
-      if (error) throw error;
-      $("adminTotalLeads").textContent = (data || []).length;
-      if (!data || !data.length) {
-        tbody.innerHTML = '<tr><td colspan="6">No enquiries found.</td></tr>';
-        return;
-      }
-      tbody.innerHTML = data.map(lead => `
-        <tr>
-          <td>${escapeHTML(lead.name)}</td>
-          <td>${escapeHTML(lead.business_name || "-")}</td>
-          <td>${escapeHTML(lead.phone)}</td>
-          <td>${escapeHTML(lead.requirement)}</td>
-          <td>${escapeHTML(lead.quantity || "-")}</td>
-          <td>${escapeHTML(lead.status || "new")}</td>
-        </tr>
-      `).join("");
-    } catch (error) {
-      console.error("B2B leads loading error:", error);
-      tbody.innerHTML = '<tr><td colspan="6">Could not load enquiries.</td></tr>';
-    }
-  }
-
-  function bindEvents() {
-    // Bind only to elements that exist on this page. This keeps the admin script
-    // safe if optional sections are removed or the markup is cached/partially updated.
-    const bind = (id, eventName, handler) => {
-      const element = $(id);
-      if (!element) {
-        console.warn(`Admin panel: #${id} was not found; skipped ${eventName} listener.`);
-        return false;
-      }
-      element.addEventListener(eventName, handler);
-      return true;
-    };
-
-    bind("adminLoginForm", "submit", login);
-    bind("adminLogoutButton", "click", logout);
-    bind("adminProductForm", "submit", saveProduct);
-    bind("resetProductFormButton", "click", resetProductForm);
-    bind("refreshProductsButton", "click", loadProducts);
-    bind("refreshLeadsButton", "click", loadLeads);
-
-    bind("adminProductsTableBody", "click", event => {
-      const target = event.target instanceof Element ? event.target : null;
-      if (!target) return;
-      const editProductButton = target.closest(".admin-edit-product");
-      const editVariantButton = target.closest(".admin-edit-variant");
-      const addVariantButton = target.closest(".admin-add-variant");
-      if (editProductButton) editProduct(editProductButton.dataset.id);
-      else if (editVariantButton) editVariantInTable(editVariantButton.dataset.id);
-      else if (addVariantButton) addVariantFromTable(addVariantButton.dataset.productId);
-    });
-  }
-
-  document.addEventListener("DOMContentLoaded", async () => {
-    try {
-      bindEvents();
-      await initializeSupabase();
-      await checkAdminSession();
-      supabase.auth.onAuthStateChange(event => {
-        if (event === "SIGNED_OUT") showLogin();
-      });
-    } catch (error) {
-      console.error("Admin initialization error:", error);
-      showMessage("adminLoginMessage", error.message || "Admin panel could not connect to the database.", true);
-    }
+  $('loginForm').addEventListener('submit', async e=>{
+    e.preventDefault(); $('loginMsg').textContent='Signing in…';
+    const {data,error}=await supabaseClient.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});
+    if(error){$('loginMsg').textContent=error.message;return;}
+    const {data:admin,error:adminError}=await supabaseClient.from('admin_users').select('user_id,role').eq('user_id',data.user.id).maybeSingle();
+    if(adminError||!admin){await supabaseClient.auth.signOut();$('loginMsg').textContent='This account is not authorized as a store admin.';return;}
+    await enterApp();
   });
+  $('logoutBtn').addEventListener('click',async()=>{await supabaseClient.auth.signOut();location.reload();});
+
+  async function init() {
+    const {data:{session}}=await supabaseClient.auth.getSession();
+    if(session?.user){const {data:admin}=await supabaseClient.from('admin_users').select('user_id').eq('user_id',session.user.id).maybeSingle();if(admin){await enterApp();return;}}
+    $('loginView').hidden=false;
+  }
+  async function enterApp(){ $('loginView').hidden=true; $('appView').hidden=false; await refreshAll(); }
+  async function refreshAll(){await Promise.all([loadProducts(),loadOrders(),loadLeads()]);updateStats();renderRecentOrders();if(state.view==='products')renderProducts();if(state.view==='orders')renderOrders();if(state.view==='leads')renderLeads();}
+  async function loadProducts(){
+    const {data,error}=await supabaseClient.from('products').select('*,product_variants(*)').order('created_at',{ascending:false});
+    if(error){$('productsTable').innerHTML=`<div class="empty">${esc(error.message)}</div>`;return;}
+    state.products=data||[];
+  }
+  async function loadOrders(){
+    const {data,error}=await supabaseClient.from('orders').select('*').order('created_at',{ascending:false}).limit(150);
+    state.orders=error?[]:(data||[]);
+    if(error)$('ordersTable').innerHTML=`<div class="empty">${esc(error.message)}</div>`;
+  }
+  async function loadLeads(){
+    const {data,error}=await supabaseClient.from('b2b_leads').select('*').order('created_at',{ascending:false}).limit(150);
+    state.leads=error?[]:(data||[]);
+    if(error)$('leadsTable').innerHTML=`<div class="empty">${esc(error.message)}</div>`;
+  }
+  function updateStats(){
+    $('statProducts').textContent=state.products.length;
+    $('statActive').textContent=state.products.filter(p=>p.active).length;
+    $('statOrders').textContent=state.orders.length;
+    $('statLeads').textContent=state.leads.filter(l=>(l.status||'new')==='new').length;
+    $('productCount').textContent=`${state.products.length} products`;
+  }
+  function productImage(url,name){return url?`<img class="product-thumb" src="${esc(url)}" alt="${esc(name)}" loading="lazy" onerror="this.outerHTML='<span class=&quot;product-thumb placeholder&quot;>✦</span>'">`:`<span class="product-thumb placeholder">✦</span>`;}
+  function renderProducts(){
+    const q=$('productSearch').value.trim().toLowerCase();
+    const products=state.products.filter(p=>[p.name,p.description,...(p.product_variants||[]).map(v=>v.name)].join(' ').toLowerCase().includes(q));
+    let rows=[];
+    products.forEach(p=>{
+      const variants=(p.product_variants||[]).slice().sort((a,b)=>String(a.name).localeCompare(String(b.name),undefined,{numeric:true}));
+      if(!variants.length){rows.push(`<tr><td><div class="product-cell">${productImage(p.image_url,p.name)}<div><span class="product-name">${esc(p.name)}</span><span class="sub-cell">No pack added</span></div></div></td><td>—</td><td>—</td><td class="details-cell">${esc(p.description||'—')}</td><td><span class="status ${p.active?'':'off'}">${p.active?'Active':'Inactive'}</span></td><td><div class="action-group"><button class="small-btn" data-edit="${p.id}">Edit</button><button class="small-btn delete" data-delete="${p.id}">Delete</button></div></td></tr>`);return;}
+      variants.forEach((v,i)=>rows.push(`<tr><td><div class="product-cell">${i===0?productImage(p.image_url,p.name):'<span class="product-thumb placeholder">↳</span>'}<div><span class="product-name">${i===0?esc(p.name):'<span class="sub-cell">Same product</span>'}</span>${i===0?`<span class="sub-cell">${esc(p.name)}</span>`:''}</div></div></td><td><strong>${esc(v.name||'Pack')}</strong></td><td><strong>${money(v.price)}</strong></td><td class="details-cell">${i===0?esc(p.description||'—'):'<span class="sub-cell">Product details above</span>'}</td><td><span class="status ${p.active&&v.active?'':'off'}">${p.active&&v.active?'Active':'Inactive'}</span><span class="sub-cell">Stock: ${Number(v.stock||0)}</span></td><td><div class="action-group">${i===0?`<button class="small-btn" data-edit="${p.id}">Edit product</button>`:''}<button class="small-btn" data-edit-variant="${p.id}" data-variant="${v.id}">Edit pack</button><button class="small-btn delete" data-delete-variant="${v.id}" data-product="${p.id}">Delete pack</button>${i===0?`<button class="small-btn delete" data-delete="${p.id}">Delete product</button>`:''}</div></td></tr>`));
+    });
+    $('productsTable').innerHTML=rows.length?`<table><thead><tr><th>Product name</th><th>Product quantity</th><th>Product price</th><th>Product details</th><th>Status / stock</th><th>Actions</th></tr></thead><tbody>${rows.join('')}</tbody></table>`:'<div class="empty">No products found. Add your first product to get started.</div>';
+    $('productsTable').querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',()=>openProductModal(b.dataset.edit)));
+    $('productsTable').querySelectorAll('[data-delete]').forEach(b=>b.addEventListener('click',()=>deleteProduct(b.dataset.delete)));
+    $('productsTable').querySelectorAll('[data-edit-variant]').forEach(b=>b.addEventListener('click',()=>openProductModal(b.dataset.editVariant,b.dataset.variant)));
+    $('productsTable').querySelectorAll('[data-delete-variant]').forEach(b=>b.addEventListener('click',()=>deleteVariant(b.dataset.deleteVariant,b.dataset.product)));
+  }
+  function renderRecentOrders(){
+    const list=state.orders.slice(0,5);
+    $('recentOrders').innerHTML=list.length?`<table><thead><tr><th>Order</th><th>Customer</th><th>Total</th><th>Status</th></tr></thead><tbody>${list.map(o=>`<tr><td>${esc(o.order_number||String(o.id).slice(0,8))}</td><td>${esc(o.customer_name||'Customer')}</td><td>${money(o.total_amount)}</td><td><span class="status ${o.status==='cancelled'?'off':''}">${esc(o.status||'pending')}</span></td></tr>`).join('')}</tbody></table>`:'<div class="empty">No orders received yet.</div>';
+  }
+  function renderOrders(){
+    $('ordersTable').innerHTML=state.orders.length?`<table><thead><tr><th>Order reference</th><th>Customer</th><th>Phone</th><th>Amount</th><th>Payment</th><th>Order status</th></tr></thead><tbody>${state.orders.map(o=>`<tr><td><strong>${esc(o.order_number||String(o.id).slice(0,8))}</strong><span class="sub-cell">${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</span></td><td>${esc(o.customer_name||'—')}</td><td>${esc(o.customer_phone||'—')}</td><td>${money(o.total_amount)}</td><td>${esc(o.payment_status||'unverified')}</td><td><select class="status-select" data-order="${o.id}">${['pending','confirmed','processing','shipped','completed','cancelled'].map(s=>`<option value="${s}" ${s===(o.status||'pending')?'selected':''}>${s}</option>`).join('')}</select></td></tr>`).join('')}</tbody></table>`:'<div class="empty">No orders found.</div>';
+    $('ordersTable').querySelectorAll('[data-order]').forEach(s=>s.addEventListener('change',async()=>{const {error}=await supabaseClient.from('orders').update({status:s.value}).eq('id',s.dataset.order);if(error){toast(error.message);return;}toast('Order status updated');await loadOrders();updateStats();renderOrders();renderRecentOrders();}));
+  }
+  function renderLeads(){
+    $('leadsTable').innerHTML=state.leads.length?`<table><thead><tr><th>Name</th><th>Business</th><th>Phone</th><th>Email</th><th>Requirements</th><th>Status</th></tr></thead><tbody>${state.leads.map(l=>`<tr><td><strong>${esc(l.name)}</strong></td><td>${esc(l.business_name||'—')}</td><td>${esc(l.phone)}</td><td>${esc(l.email||'—')}</td><td>${esc(l.requirements||'—')}</td><td><select data-lead="${l.id}">${['new','contacted','qualified','closed'].map(s=>`<option value="${s}" ${s===(l.status||'new')?'selected':''}>${s}</option>`).join('')}</select></td></tr>`).join('')}</tbody></table>`:'<div class="empty">No B2B enquiries found.</div>';
+    $('leadsTable').querySelectorAll('[data-lead]').forEach(s=>s.addEventListener('change',async()=>{const {error}=await supabaseClient.from('b2b_leads').update({status:s.value}).eq('id',s.dataset.lead);if(error){toast(error.message);return;}toast('Enquiry status updated');await loadLeads();updateStats();renderLeads();}));
+  }
+
+  function addVariantRow(v={}){
+    const key=++state.variantCounter;
+    const row=document.createElement('div');row.className='variant-row';row.dataset.variantId=v.id||'';
+    row.innerHTML=`<label>Pack size / quantity *<input class="variant-name" required maxlength="40" placeholder="e.g. 250g" value="${esc(v.name||'')}"></label><label>Selling price (₹) *<input class="variant-price" type="number" min="0.01" step="0.01" required placeholder="80" value="${v.price??''}"></label><label>Stock quantity<input class="variant-stock" type="number" min="0" step="1" value="${v.stock??0}"></label><label class="variant-active-label">Status<select class="variant-active"><option value="true" ${v.active!==false?'selected':''}>Active</option><option value="false" ${v.active===false?'selected':''}>Inactive</option></select></label><button type="button" class="remove-variant" aria-label="Remove pack">×</button>`;
+    row.querySelector('.remove-variant').addEventListener('click',()=>{if($('variantEditor').children.length===1){toast('At least one pack size is required');return;}row.remove();});
+    $('variantEditor').append(row);
+  }
+  function openProductModal(id=null,focusVariantId=null){
+    const p=id?state.products.find(x=>x.id===id):null;
+    $('productForm').reset();$('productId').value=p?.id||'';$('productName').value=p?.name||'';$('productDescription').value=p?.description||'';$('productImage').value=p?.image_url||'';$('productActive').checked=p?.active!==false;
+    $('variantEditor').innerHTML='';let variants=p?.product_variants||[];
+    (variants.length?variants:[{}]).forEach(v=>addVariantRow(v));
+    $('modalTitle').textContent=p?(focusVariantId?'Edit pack size':'Edit product'):'Add product';
+    $('saveProduct').textContent=p?'Save changes':'Save product';setMessage('');
+    $('productModal').hidden=false;document.body.style.overflow='hidden';
+    if(focusVariantId){const target=[...$('variantEditor').querySelectorAll('.variant-row')].find(row=>row.dataset.variantId===focusVariantId);target?.scrollIntoView({block:'center'});}
+  }
+  function closeProductModal(){$('productModal').hidden=true;document.body.style.overflow='';}
+  $('productForm').addEventListener('submit',async e=>{
+    e.preventDefault();setMessage('');
+    const name=$('productName').value.trim();if(!name){setMessage('Product name is required.');return;}
+    const rows=[...$('variantEditor').querySelectorAll('.variant-row')];
+    if(!rows.length){setMessage('Add at least one pack size and price.');return;}
+    const variants=[];
+    for(const row of rows){const pack=row.querySelector('.variant-name').value.trim();const price=Number(row.querySelector('.variant-price').value);const stock=Number(row.querySelector('.variant-stock').value||0);if(!pack||!Number.isFinite(price)||price<=0||!Number.isInteger(stock)||stock<0){setMessage('Check each pack size, valid price and stock quantity.');return;}variants.push({id:row.dataset.variantId||null,name:pack,price,stock,active:row.querySelector('.variant-active').value==='true'});}
+    $('saveProduct').disabled=true;$('saveProduct').textContent='Saving…';
+    try{
+      const id=$('productId').value;
+      const payload={name,description:$('productDescription').value.trim()||null,image_url:$('productImage').value.trim()||null,active:$('productActive').checked,updated_at:new Date().toISOString()};
+      const result=id?await supabaseClient.from('products').update(payload).eq('id',id).select().single():await supabaseClient.from('products').insert(payload).select().single();
+      if(result.error)throw result.error;
+      const product=result.data;
+      const current=(state.products.find(p=>p.id===product.id)?.product_variants)||[];
+      const keepIds=variants.filter(v=>v.id).map(v=>v.id);
+      const removed=current.filter(v=>!keepIds.includes(v.id)).map(v=>v.id);
+      if(removed.length){const del=await supabaseClient.from('product_variants').delete().in('id',removed);if(del.error)throw del.error;}
+      for(const v of variants){
+        const row={product_id:product.id,name:v.name,price:v.price,stock:v.stock,active:v.active};
+        const saved=v.id?await supabaseClient.from('product_variants').update(row).eq('id',v.id):await supabaseClient.from('product_variants').insert(row);
+        if(saved.error)throw saved.error;
+      }
+      closeProductModal();toast(id?'Product updated successfully':'Product added successfully');await refreshAll();
+    }catch(err){setMessage(err.message||'Could not save product.');}
+    finally{$('saveProduct').disabled=false;$('saveProduct').textContent=$('productId').value?'Save changes':'Save product';}
+  });
+  async function deleteProduct(id){
+    const p=state.products.find(x=>x.id===id);if(!p||!confirm(`Delete "${p.name}" and all its pack sizes? This cannot be undone.`))return;
+    const {error}=await supabaseClient.from('products').delete().eq('id',id);if(error){toast(error.message);return;}toast('Product deleted');await refreshAll();
+  }
+  async function deleteVariant(variantId,productId){
+    const p=state.products.find(x=>x.id===productId);
+    if((p?.product_variants||[]).length<=1){toast('Keep at least one pack size. Delete the whole product if it is no longer sold.');return;}
+    if(!confirm(`Delete this pack size from "${p?.name||'product'}"?`))return;
+    const {error}=await supabaseClient.from('product_variants').delete().eq('id',variantId);if(error){toast(error.message);return;}toast('Pack size deleted');await refreshAll();
+  }
+  init().catch(err=>{$('loginMsg').textContent=err.message||'Unable to initialize admin panel.';});
 })();
