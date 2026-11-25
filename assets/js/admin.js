@@ -255,49 +255,6 @@
     await loadProducts();
   }
 
-  function renderVariantRows() {
-    const tbody = $("adminVariantsTableBody");
-    if (!currentVariants.length) {
-      tbody.innerHTML = '<tr id="adminNoVariantsRow"><td colspan="6">No pack sizes added yet. Use “Add Pack Size”.</td></tr>';
-      return;
-    }
-
-    tbody.innerHTML = currentVariants.map((variant, index) => `
-      <tr data-variant-index="${index}">
-        <td><input type="text" class="variant-weight" value="${escapeHTML(variant.weight ?? "")}" placeholder="e.g. 100g" required></td>
-        <td><input type="number" class="variant-mrp" min="0" step="0.01" value="${escapeHTML(variant.mrp ?? "")}" placeholder="0.00"></td>
-        <td><input type="number" class="variant-price" min="0" step="0.01" value="${escapeHTML(variant.price ?? "")}" placeholder="0.00" required></td>
-        <td><input type="number" class="variant-stock" min="0" step="1" value="${escapeHTML(variant.stock ?? 0)}" required></td>
-        <td><input type="checkbox" class="variant-active" ${variant.is_active !== false ? "checked" : ""} aria-label="Pack size active"></td>
-        <td><button type="button" class="btn btn-secondary admin-remove-variant" data-index="${index}">Remove</button></td>
-      </tr>
-    `).join("");
-  }
-
-  function addVariant() {
-    currentVariants.push({
-      id: null, product_id: $("adminProductId").value || null,
-      weight: "", mrp: "", price: "", stock: 0, is_active: true
-    });
-    renderVariantRows();
-  }
-
-  function collectVariantsFromForm() {
-    const rows = [...$("adminVariantsTableBody").querySelectorAll("tr[data-variant-index]")];
-    return rows.map(row => {
-      const index = Number(row.dataset.variantIndex);
-      const previous = currentVariants[index] || {};
-      return {
-        ...previous,
-        weight: row.querySelector(".variant-weight").value.trim(),
-        mrp: row.querySelector(".variant-mrp").value === "" ? null : Number(row.querySelector(".variant-mrp").value),
-        price: Number(row.querySelector(".variant-price").value),
-        stock: Number(row.querySelector(".variant-stock").value),
-        is_active: row.querySelector(".variant-active").checked
-      };
-    });
-  }
-
   function resetProductForm() {
     $("adminProductForm").reset();
     $("adminProductId").value = "";
@@ -392,17 +349,31 @@
   }
 
   function bindEvents() {
-    $("adminLoginForm").addEventListener("submit", login);
-    $("adminLogoutButton").addEventListener("click", logout);
-    $("adminProductForm").addEventListener("submit", saveProduct);
-    $("resetProductFormButton").addEventListener("click", resetProductForm);
-    $("refreshProductsButton").addEventListener("click", loadProducts);
-    $("refreshLeadsButton").addEventListener("click", loadLeads);
+    // Bind only to elements that exist on this page. This keeps the admin script
+    // safe if optional sections are removed or the markup is cached/partially updated.
+    const bind = (id, eventName, handler) => {
+      const element = $(id);
+      if (!element) {
+        console.warn(`Admin panel: #${id} was not found; skipped ${eventName} listener.`);
+        return false;
+      }
+      element.addEventListener(eventName, handler);
+      return true;
+    };
 
-    $("adminProductsTableBody").addEventListener("click", event => {
-      const editProductButton = event.target.closest(".admin-edit-product");
-      const editVariantButton = event.target.closest(".admin-edit-variant");
-      const addVariantButton = event.target.closest(".admin-add-variant");
+    bind("adminLoginForm", "submit", login);
+    bind("adminLogoutButton", "click", logout);
+    bind("adminProductForm", "submit", saveProduct);
+    bind("resetProductFormButton", "click", resetProductForm);
+    bind("refreshProductsButton", "click", loadProducts);
+    bind("refreshLeadsButton", "click", loadLeads);
+
+    bind("adminProductsTableBody", "click", event => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (!target) return;
+      const editProductButton = target.closest(".admin-edit-product");
+      const editVariantButton = target.closest(".admin-edit-variant");
+      const addVariantButton = target.closest(".admin-add-variant");
       if (editProductButton) editProduct(editProductButton.dataset.id);
       else if (editVariantButton) editVariantInTable(editVariantButton.dataset.id);
       else if (addVariantButton) addVariantFromTable(addVariantButton.dataset.productId);
