@@ -7,9 +7,7 @@
   let deletedVariantIds = [];
   let activeProductId = null;
 
-  const $ = function (id) {
-    return document.getElementById(id);
-  };
+  const $ = id => document.getElementById(id);
 
   function showMessage(id, message, isError) {
     const element = $(id);
@@ -20,89 +18,25 @@
   }
 
   function escapeHTML(value) {
-    return String(value ?? "").replace(/[&<>"']/g, function (character) {
-      return {
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#039;"
-      }[character];
-    });
+    return String(value ?? "").replace(/[&<>"']/g, character => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;"
+    }[character]));
   }
 
-  function getVariantName(variant) {
-    return variant.variant_name ||
-      variant.weight ||
-      variant.size ||
-      variant.name ||
-      variant.quantity ||
-      "";
+  function getVariantName(v) {
+    return v.variant_name || v.weight || v.size || v.name || v.quantity || "";
   }
 
-  function getVariantPrice(variant) {
-    return variant.selling_price ??
-      variant.sale_price ??
-      variant.price ??
-      0;
+  function getVariantPrice(v) {
+    return v.selling_price ?? v.sale_price ?? v.price ?? 0;
   }
 
-  function getVariantStock(variant) {
-    return variant.stock ??
-      variant.stock_quantity ??
-      variant.quantity_available ??
-      0;
-  }
-
-  // Create the product-specific heading without requiring HTML changes.
-  function ensureVariantHeading() {
-    const table = $("adminVariantsTableBody");
-    if (!table) return;
-
-    const section = table.closest("table")?.parentElement || table.parentElement;
-    if (!section) return;
-
-    let heading = $("variantParentProductName");
-
-    if (!heading) {
-      heading = document.createElement("div");
-      heading.id = "variantParentProductName";
-
-      heading.style.cssText = [
-        "margin:12px 0",
-        "padding:12px 14px",
-        "border:1px solid #ddd",
-        "border-radius:8px",
-        "background:#f7f7f7",
-        "font-weight:600"
-      ].join(";");
-
-      section.insertBefore(heading, section.firstChild);
-    }
-
-    updateVariantHeading();
-  }
-
-  function updateVariantHeading() {
-    const heading = $("variantParentProductName");
-    if (!heading) return;
-
-    const productId = $("adminProductId")?.value;
-    const productName = $("adminProductName")?.value.trim();
-
-    if (productId) {
-      heading.textContent =
-        "Pack Sizes & Pricing for: " +
-        (productName || "Selected Product") +
-        " (Product ID: " + productId + ")";
-    } else if (productName) {
-      heading.textContent =
-        "Pack Sizes for: " + productName +
-        " — Save the product to create its product ID.";
-    } else {
-      heading.textContent =
-        "Pack Sizes & Pricing — Enter a product name first.";
-    }
+  function getVariantStock(v) {
+    return v.stock ?? v.stock_quantity ?? v.quantity_available ?? 0;
   }
 
   async function initializeSupabase() {
@@ -117,9 +51,12 @@
     supabase = window.shriSupabase;
   }
 
+  // -------------------------
+  // AUTHENTICATION
+  // -------------------------
+
   async function checkAdminSession() {
     const { data, error } = await supabase.auth.getSession();
-
     if (error) throw error;
 
     const session = data.session;
@@ -181,8 +118,8 @@
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password
+        email,
+        password
       });
 
       if (error) throw error;
@@ -190,13 +127,8 @@
       await checkAdminSession();
 
     } catch (error) {
-      console.error("Admin login error:", error);
-
-      showMessage(
-        "adminLoginMessage",
-        error.message || "Login failed. Please try again.",
-        true
-      );
+      console.error(error);
+      showMessage("adminLoginMessage", error.message, true);
     } finally {
       button.disabled = false;
       button.textContent = "Login";
@@ -206,7 +138,6 @@
   async function logout() {
     try {
       const { error } = await supabase.auth.signOut();
-
       if (error) throw error;
 
       showLogin();
@@ -214,10 +145,14 @@
       resetProductForm();
 
     } catch (error) {
-      console.error("Admin logout error:", error);
+      console.error(error);
       alert("Could not log out. Please try again.");
     }
   }
+
+  // -------------------------
+  // DASHBOARD
+  // -------------------------
 
   async function loadDashboard() {
     await Promise.all([
@@ -229,36 +164,38 @@
 
   async function loadStats() {
     try {
-      const [productsResult, ordersResult, leadsResult] =
-        await Promise.all([
-          supabase.from("products")
-            .select("id", { count: "exact", head: true }),
+      const [p, o, l] = await Promise.all([
+        supabase.from("products")
+          .select("id", { count: "exact", head: true }),
 
-          supabase.from("orders")
-            .select("id", { count: "exact", head: true }),
+        supabase.from("orders")
+          .select("id", { count: "exact", head: true }),
 
-          supabase.from("b2b_leads")
-            .select("id", { count: "exact", head: true })
-        ]);
+        supabase.from("b2b_leads")
+          .select("id", { count: "exact", head: true })
+      ]);
 
-      if (productsResult.error) throw productsResult.error;
-      if (ordersResult.error) throw ordersResult.error;
-      if (leadsResult.error) throw leadsResult.error;
+      if (p.error) throw p.error;
+      if (o.error) throw o.error;
+      if (l.error) throw l.error;
 
-      $("adminTotalProducts").textContent = productsResult.count ?? 0;
-      $("adminTotalOrders").textContent = ordersResult.count ?? 0;
-      $("adminTotalLeads").textContent = leadsResult.count ?? 0;
+      $("adminTotalProducts").textContent = p.count ?? 0;
+      $("adminTotalOrders").textContent = o.count ?? 0;
+      $("adminTotalLeads").textContent = l.count ?? 0;
 
     } catch (error) {
-      console.error("Dashboard stats error:", error);
+      console.error("Stats error:", error);
     }
   }
+
+  // -------------------------
+  // PRODUCT + VARIANT LIST
+  // -------------------------
 
   async function loadProducts() {
     const tbody = $("adminProductsTableBody");
 
-    tbody.innerHTML =
-      '<tr><td colspan="4">Loading products...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8">Loading products...</td></tr>';
 
     try {
       const { data, error } = await supabase
@@ -270,21 +207,76 @@
 
       products = data || [];
 
-      $("adminTotalProducts").textContent = products.length;
+      await renderProductsTable();
 
-      if (products.length === 0) {
-        tbody.innerHTML =
-          '<tr><td colspan="4">No products found.</td></tr>';
-        return;
-      }
+    } catch (error) {
+      console.error(error);
+      tbody.innerHTML =
+        '<tr><td colspan="8">Could not load products.</td></tr>';
+    }
+  }
 
-      tbody.innerHTML = products.map(function (product) {
-        const status = product.is_active ? "Active" : "Inactive";
+  async function renderProductsTable() {
+    const tbody = $("adminProductsTableBody");
 
-        return `
+    const table = tbody.closest("table");
+
+    if (table) {
+      const thead = table.querySelector("thead");
+
+      if (thead) {
+        thead.innerHTML = `
           <tr>
-            <td>${escapeHTML(product.name || "")}</td>
-            <td>${escapeHTML(product.slug || "")}</td>
+            <th>Product</th>
+            <th>Slug</th>
+            <th>Pack Size</th>
+            <th>MRP</th>
+            <th>Selling Price</th>
+            <th>Stock</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        `;
+      }
+    }
+
+    if (!products.length) {
+      tbody.innerHTML =
+        '<tr><td colspan="8">No products found.</td></tr>';
+
+      $("adminTotalProducts").textContent = 0;
+      return;
+    }
+
+    tbody.innerHTML =
+      '<tr><td colspan="8">Loading pack sizes...</td></tr>';
+
+    const { data: variants, error } = await supabase
+      .from("product_variants")
+      .select("*");
+
+    if (error) throw error;
+
+    const allVariants = variants || [];
+
+    let html = "";
+
+    products.forEach(product => {
+      const productVariants = allVariants.filter(v =>
+        String(v.product_id) === String(product.id)
+      );
+
+      const status = product.is_active ? "Active" : "Inactive";
+
+      if (!productVariants.length) {
+        html += `
+          <tr>
+            <td>${escapeHTML(product.name)}</td>
+            <td>${escapeHTML(product.slug)}</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
             <td>${status}</td>
             <td>
               <button
@@ -296,19 +288,60 @@
             </td>
           </tr>
         `;
-      }).join("");
 
-    } catch (error) {
-      console.error("Products loading error:", error);
+        return;
+      }
 
-      tbody.innerHTML =
-        '<tr><td colspan="4">Could not load products.</td></tr>';
-    }
+      productVariants.forEach((variant, index) => {
+        html += `
+          <tr>
+            <td>
+              ${index === 0
+                ? escapeHTML(product.name)
+                : '<span style="opacity:.45">↳</span>'}
+            </td>
+
+            <td>
+              ${index === 0
+                ? escapeHTML(product.slug)
+                : ""}
+            </td>
+
+            <td>${escapeHTML(getVariantName(variant))}</td>
+
+            <td>₹${escapeHTML(variant.mrp ?? variant.original_price ?? "-")}</td>
+
+            <td>₹${escapeHTML(getVariantPrice(variant))}</td>
+
+            <td>${escapeHTML(getVariantStock(variant))}</td>
+
+            <td>
+              ${index === 0 ? status : ""}
+            </td>
+
+            <td>
+              ${index === 0 ? `
+                <button
+                  type="button"
+                  class="btn btn-secondary admin-edit-product"
+                  data-id="${escapeHTML(product.id)}">
+                  Edit
+                </button>
+              ` : ""}
+            </td>
+          </tr>
+        `;
+      });
+    });
+
+    tbody.innerHTML = html;
+
+    $("adminTotalProducts").textContent = products.length;
   }
 
-  // -----------------------------
-  // VARIANT MANAGEMENT
-  // -----------------------------
+  // -------------------------
+  // VARIANT EDITOR
+  // -------------------------
 
   function renderVariantRow(variant) {
     const tbody = $("adminVariantsTableBody");
@@ -318,69 +351,55 @@
     if (noRow) noRow.remove();
 
     const row = document.createElement("tr");
-
     row.className = "admin-variant-row";
     row.dataset.variantId = variant.id || "";
-
-    const name = getVariantName(variant);
-    const mrp = variant.mrp ?? variant.original_price ?? "";
-    const price = getVariantPrice(variant);
-    const stock = getVariantStock(variant);
 
     row.innerHTML = `
       <td>
         <input
-          type="text"
           class="variant-name"
-          value="${escapeHTML(name)}"
+          type="text"
+          value="${escapeHTML(getVariantName(variant))}"
           placeholder="100g / 200g / 1kg"
-          required
-        >
+          required>
       </td>
 
       <td>
         <input
-          type="number"
           class="variant-mrp"
-          value="${escapeHTML(mrp)}"
+          type="number"
+          value="${escapeHTML(variant.mrp ?? variant.original_price ?? "")}"
           min="0"
           step="0.01"
-          placeholder="MRP"
-          required
-        >
+          required>
       </td>
 
       <td>
         <input
-          type="number"
           class="variant-price"
-          value="${escapeHTML(price)}"
+          type="number"
+          value="${escapeHTML(getVariantPrice(variant))}"
           min="0"
           step="0.01"
-          placeholder="Selling price"
-          required
-        >
+          required>
         <small class="variant-discount"></small>
       </td>
 
       <td>
         <input
-          type="number"
           class="variant-stock"
-          value="${escapeHTML(stock)}"
+          type="number"
+          value="${escapeHTML(getVariantStock(variant))}"
           min="0"
           step="1"
-          placeholder="Stock"
-          required
-        >
+          required>
       </td>
 
       <td>
         <input
-          type="checkbox"
           class="variant-active"
-          ${variant.is_active !== false && variant.active !== false ? "checked" : ""}
-        >
+          type="checkbox"
+          ${variant.is_active !== false && variant.active !== false ? "checked" : ""}>
       </td>
 
       <td>
@@ -402,7 +421,7 @@
     if (!productName) {
       showMessage(
         "adminVariantMessage",
-        "Enter the product name before adding pack sizes.",
+        "Enter product name first.",
         true
       );
       return;
@@ -415,8 +434,6 @@
       stock: 0,
       is_active: true
     });
-
-    showMessage("adminVariantMessage", "", false);
   }
 
   function updateVariantDiscount(row) {
@@ -439,9 +456,7 @@
   function clearVariants() {
     $("adminVariantsTableBody").innerHTML = `
       <tr id="adminNoVariantsRow">
-        <td colspan="6">
-          No pack sizes added yet.
-        </td>
+        <td colspan="6">No pack sizes added yet.</td>
       </tr>
     `;
 
@@ -459,36 +474,15 @@
       .select("*")
       .eq("product_id", productId);
 
-    if (error) {
-      console.error("Variant loading error:", error);
+    if (error) throw error;
 
-      showMessage(
-        "adminVariantMessage",
-        "Could not load pack sizes: " + error.message,
-        true
-      );
+    currentVariants = data || [];
 
-      return;
-    }
-
-    // Only variants belonging to the selected product are displayed.
-    currentVariants = (data || []).filter(function (variant) {
-      return String(variant.product_id) === String(productId);
-    });
-
-    if (currentVariants.length === 0) return;
+    if (!currentVariants.length) return;
 
     $("adminVariantsTableBody").innerHTML = "";
 
-    currentVariants.forEach(function (variant) {
-      renderVariantRow(variant);
-    });
-
-    showMessage(
-      "adminVariantMessage",
-      currentVariants.length + " pack size(s) loaded for this product.",
-      false
-    );
+    currentVariants.forEach(renderVariantRow);
   }
 
   function collectVariants() {
@@ -505,31 +499,26 @@
       const stock = Number(row.querySelector(".variant-stock").value);
       const active = row.querySelector(".variant-active").checked;
 
-      if (!name) {
-        throw new Error("Enter a pack size for every variant.");
-      }
+      if (!name) throw new Error("Enter a pack size.");
 
       if (!Number.isFinite(mrp) || mrp <= 0) {
-        throw new Error("Enter a valid MRP for " + name + ".");
+        throw new Error("Invalid MRP for " + name);
       }
 
       if (!Number.isFinite(price) || price <= 0 || price > mrp) {
-        throw new Error(
-          "Selling price must be greater than zero and cannot exceed MRP for " +
-          name + "."
-        );
+        throw new Error("Invalid selling price for " + name);
       }
 
       if (!Number.isInteger(stock) || stock < 0) {
-        throw new Error("Enter valid stock quantity for " + name + ".");
+        throw new Error("Invalid stock for " + name);
       }
 
       variants.push({
         id: row.dataset.variantId || null,
         variant_name: name,
-        mrp: mrp,
+        mrp,
         selling_price: price,
-        stock: stock,
+        stock,
         is_active: active
       });
     }
@@ -538,40 +527,35 @@
   }
 
   function removeVariant(row) {
-    const variantId = row.dataset.variantId;
+    const id = row.dataset.variantId;
 
-    if (variantId) {
-      deletedVariantIds.push(variantId);
-    }
+    if (id) deletedVariantIds.push(id);
 
     row.remove();
 
     if (!$("adminVariantsTableBody").querySelector(".admin-variant-row")) {
       $("adminVariantsTableBody").innerHTML = `
         <tr id="adminNoVariantsRow">
-          <td colspan="6">
-            No pack sizes added yet.
-          </td>
+          <td colspan="6">No pack sizes added yet.</td>
         </tr>
       `;
     }
   }
 
-  // -----------------------------
+  // -------------------------
   // SAVE VARIANTS
-  // -----------------------------
+  // -------------------------
 
   async function saveVariants(productId, variants) {
     if (!productId) {
-      throw new Error("Product ID is missing. Variants cannot be linked.");
+      throw new Error("Missing product ID.");
     }
 
-    // Delete only variants explicitly removed from this product.
-    for (const variantId of deletedVariantIds) {
+    for (const id of deletedVariantIds) {
       const { error } = await supabase
         .from("product_variants")
         .delete()
-        .eq("id", variantId)
+        .eq("id", id)
         .eq("product_id", productId);
 
       if (error) throw error;
@@ -588,7 +572,6 @@
       };
 
       if (variant.id) {
-        // Prevent updating a variant belonging to another product.
         const { error } = await supabase
           .from("product_variants")
           .update(payload)
@@ -609,9 +592,9 @@
     deletedVariantIds = [];
   }
 
-  // -----------------------------
+  // -------------------------
   // PRODUCT FORM
-  // -----------------------------
+  // -------------------------
 
   function resetProductForm() {
     $("adminProductForm").reset();
@@ -627,17 +610,15 @@
     showMessage("adminVariantMessage", "", false);
 
     clearVariants();
-    updateVariantHeading();
   }
 
   async function editProduct(productId) {
-    const product = products.find(function (item) {
-      return String(item.id) === String(productId);
-    });
+    const product = products.find(p =>
+      String(p.id) === String(productId)
+    );
 
     if (!product) return;
 
-    // Clear old product's variants before switching.
     clearVariants();
 
     $("adminProductId").value = product.id;
@@ -649,11 +630,6 @@
     $("adminProductActive").checked = Boolean(product.is_active);
 
     $("saveProductButton").textContent = "Update Product";
-
-    activeProductId = String(product.id);
-    updateVariantHeading();
-
-    showMessage("adminVariantMessage", "Loading this product's pack sizes...", false);
 
     await loadVariants(product.id);
 
@@ -691,8 +667,8 @@
     try {
       variants = collectVariants();
 
-      if (variants.length === 0) {
-        throw new Error("Add at least one pack size before saving the product.");
+      if (!variants.length) {
+        throw new Error("Add at least one pack size.");
       }
 
     } catch (error) {
@@ -701,7 +677,7 @@
     }
 
     const button = $("saveProductButton");
-    const originalButtonText = productId ? "Update Product" : "Save Product";
+    const originalText = productId ? "Update Product" : "Save Product";
 
     button.disabled = true;
     button.textContent = "Saving...";
@@ -729,18 +705,11 @@
         savedProductId = data.id;
       }
 
-      if (!savedProductId) {
-        throw new Error("Product was saved but its ID could not be obtained.");
-      }
-
-      // All new and existing variants are linked to this exact product ID.
       await saveVariants(savedProductId, variants);
 
       showMessage(
         "adminProductMessage",
-        productId
-          ? "Product and its pack sizes updated successfully."
-          : "Product and its pack sizes added successfully.",
+        "Product and pack sizes saved successfully.",
         false
       );
 
@@ -750,7 +719,7 @@
       await loadStats();
 
     } catch (error) {
-      console.error("Product save error:", error);
+      console.error(error);
 
       showMessage(
         "adminProductMessage",
@@ -760,19 +729,18 @@
 
     } finally {
       button.disabled = false;
-      button.textContent = originalButtonText;
+      button.textContent = originalText;
     }
   }
 
-  // -----------------------------
-  // B2B ENQUIRIES
-  // -----------------------------
+  // -------------------------
+  // B2B
+  // -------------------------
 
   async function loadLeads() {
     const tbody = $("adminLeadsTableBody");
 
-    tbody.innerHTML =
-      '<tr><td colspan="6">Loading enquiries...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6">Loading enquiries...</td></tr>';
 
     try {
       const { data, error } = await supabase
@@ -784,36 +752,34 @@
 
       $("adminTotalLeads").textContent = (data || []).length;
 
-      if (!data || data.length === 0) {
+      if (!data || !data.length) {
         tbody.innerHTML =
           '<tr><td colspan="6">No enquiries found.</td></tr>';
         return;
       }
 
-      tbody.innerHTML = data.map(function (lead) {
-        return `
-          <tr>
-            <td>${escapeHTML(lead.name)}</td>
-            <td>${escapeHTML(lead.business_name || "-")}</td>
-            <td>${escapeHTML(lead.phone)}</td>
-            <td>${escapeHTML(lead.requirement)}</td>
-            <td>${escapeHTML(lead.quantity || "-")}</td>
-            <td>${escapeHTML(lead.status || "new")}</td>
-          </tr>
-        `;
-      }).join("");
+      tbody.innerHTML = data.map(lead => `
+        <tr>
+          <td>${escapeHTML(lead.name)}</td>
+          <td>${escapeHTML(lead.business_name || "-")}</td>
+          <td>${escapeHTML(lead.phone)}</td>
+          <td>${escapeHTML(lead.requirement)}</td>
+          <td>${escapeHTML(lead.quantity || "-")}</td>
+          <td>${escapeHTML(lead.status || "new")}</td>
+        </tr>
+      `).join("");
 
     } catch (error) {
-      console.error("B2B leads loading error:", error);
+      console.error(error);
 
       tbody.innerHTML =
         '<tr><td colspan="6">Could not load enquiries.</td></tr>';
     }
   }
 
-  // -----------------------------
-  // EVENT BINDING
-  // -----------------------------
+  // -------------------------
+  // EVENTS
+  // -------------------------
 
   function bindEvents() {
     $("adminLoginForm").addEventListener("submit", login);
@@ -825,39 +791,32 @@
     $("refreshProductsButton").addEventListener("click", loadProducts);
     $("refreshLeadsButton").addEventListener("click", loadLeads);
 
-    const addVariantButton = $("addProductVariantButton");
+    $("addProductVariantButton").addEventListener("click", addVariant);
 
-    if (addVariantButton) {
-      addVariantButton.addEventListener("click", addVariant);
-    }
-
-    $("adminVariantsTableBody").addEventListener("click", function (event) {
+    $("adminVariantsTableBody").addEventListener("click", event => {
       const button = event.target.closest(".admin-remove-variant");
 
-      if (!button) return;
-
-      const row = button.closest(".admin-variant-row");
-
-      if (row) removeVariant(row);
+      if (button) {
+        const row = button.closest(".admin-variant-row");
+        if (row) removeVariant(row);
+      }
     });
 
-    $("adminVariantsTableBody").addEventListener("input", function (event) {
+    $("adminVariantsTableBody").addEventListener("input", event => {
       if (
         event.target.classList.contains("variant-mrp") ||
         event.target.classList.contains("variant-price")
       ) {
-        const row = event.target.closest(".admin-variant-row");
-
-        if (row) updateVariantDiscount(row);
+        updateVariantDiscount(
+          event.target.closest(".admin-variant-row")
+        );
       }
     });
 
-    $("adminProductsTableBody").addEventListener("click", function (event) {
+    $("adminProductsTableBody").addEventListener("click", event => {
       const button = event.target.closest(".admin-edit-product");
 
-      if (!button) return;
-
-      editProduct(button.dataset.id);
+      if (button) editProduct(button.dataset.id);
     });
 
     $("adminProductName").addEventListener("input", function () {
@@ -868,36 +827,31 @@
           .replace(/[^a-z0-9]+/g, "-")
           .replace(/^-+|-+$/g, "");
       }
-
-      updateVariantHeading();
     });
   }
 
-  // -----------------------------
-  // INITIALIZATION
-  // -----------------------------
+  // -------------------------
+  // INIT
+  // -------------------------
 
   document.addEventListener("DOMContentLoaded", async function () {
     try {
       bindEvents();
-      ensureVariantHeading();
 
       await initializeSupabase();
       await checkAdminSession();
 
       supabase.auth.onAuthStateChange(function (event) {
-        if (event === "SIGNED_OUT") {
-          showLogin();
-        }
+        if (event === "SIGNED_OUT") showLogin();
       });
 
     } catch (error) {
-      console.error("Admin initialization error:", error);
+      console.error(error);
 
       showMessage(
         "adminLoginMessage",
         "Admin panel could not connect to the database. " +
-        (error.message || "Check the connection and try again."),
+        (error.message || "Check the connection."),
         true
       );
     }
